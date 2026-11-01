@@ -66,7 +66,7 @@ Any phase-correlation or estimator code (that is WO-002, owned by Cloud); pertur
 
 ---
 
-**Executor:** Claude Code (VSCode role) on Duskrider, 2026-10-31 to 2026-11-01. Branch `wo-001-environment-and-data-survey`, from `master` (the WO says `main`; the repo's default branch is `master`).
+**Executor:** Claude Code (VSCode role) on the local workstation, 2026-10-31 to 2026-11-01. Branch `wo-001-environment-and-data-survey`, from `master` (the WO says `main`; the repo's default branch is `master`).
 
 ### Pins
 

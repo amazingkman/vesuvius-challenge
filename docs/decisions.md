@@ -65,7 +65,7 @@ Our own design choices are always welcome: the interface, rigor, documentation, 
 There are three roles. See `docs/workflow.md` for details.
 - **Planner** (this claude.ai Project): research, design review, docs, and work orders. Writes no implementation code.
 - **Cloud** (claude.ai/code on the GitHub repo): pure-code work orders that need no scroll data, no GPU and no containers, such as the estimator, synthetic harness, tests, CI, docs, and upstream villa PR drafts.
-- **VSCode** (Claude Code on Duskrider): anything touching data, Podman/VC3D, real renders, or long runs.
+- **VSCode** (Claude Code on the local workstation): anything touching data, Podman/VC3D, real renders, or long runs.
 
 Every WO names exactly one executor. Kevin reviews and merges.
 
@@ -140,3 +140,19 @@ The full-text search of villa at `d57c28e` judged all 2,483 hits (`reports/2026-
 - **Papyrus microstructure figures** (Q4: carbonized sheet 50–90 µm, layer 25–45 µm, cell sizes): several citations are garbled or uncertain. Not adopted as facts. They are treated as hypotheses, and WO-003 step 0 measures sheet thickness and gap on our own renders instead.
 
 **Consequences.** WO-002 gets a second binding addendum. WO-003 is reissued as rev 3. `method-lpsf.md` is revised.
+
+---
+
+## DR-010 — 2026-11-01 — Security and privacy policy for the public repository
+
+**Context.** Kevin requires the highest security and privacy standard for anything on GitHub, while the repository stays public for researchers. The Planner audited every file in every commit (`docs/security.md`, audit log). It found **no secrets**. It did find the owner's username, in an absolute home path written by `vch render` into five WO-001 run records, and the workstation hostname in three docs.
+
+**Decision.**
+1. Adopt `docs/security.md`: a threat model, plus rules R1–R5 (no secrets; no machine identity; no render-derived images; supply-chain hardening; private commit email).
+2. **Fix forward:**
+   - The current tree is scrubbed now. *Redaction exception:* the hostname is removed from DR-005's text. This is the only permitted edit to an earlier record, and it changes no decision.
+   - WO-005 (Cloud) makes recurrence mechanically impossible: anonymous run records, pre-commit, CI secret and identity scanning, pinned actions, least-privilege workflows. **WO-005 must merge before WO-003.**
+3. **History rewrite is optional and Kevin's call.** The leaked items are reconnaissance-grade, not access-grade. A rewrite cannot reach GitHub's immutable PR refs, cached views or existing clones without GitHub Support.
+4. **GitHub settings** (Kevin): secret scanning and push protection; Dependabot alerts; branch protection on `master`; 2FA; Cloud app scoped to this repo; private commit email.
+
+**Reversal.** None. Security rules only tighten.

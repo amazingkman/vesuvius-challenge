@@ -107,6 +107,10 @@ uv run vch verify-io data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_
 - **`verify-io`:** reads the same surface through `vesuvius.tifxyz` and `vesuvius.Volume` and correlates it with the render, which proves both paths agree.
 - **Image age:** the newest published image dates from 2026-05-13, older than our villa pin (DR-004 addendum), and it has no `--flip-normals` flag.
 
+## Security
+
+This repository is public and contains no credentials or machine-identifying information by policy. Rules, threat model and audit log: [`docs/security.md`](docs/security.md). Report vulnerabilities privately through GitHub's private vulnerability reporting (`SECURITY.md`, added by WO-005).
+
 ## Data and attribution
 
 Scroll data is never committed or redistributed. Scrolls 1–4 and Fragments 1–6 are EduceLab-Scrolls data, © EduceLab/University of Kentucky. Cite Parsons et al. 2023 (arXiv:2304.02084) and use the required methods-section sentence. Newer scans are CC BY-NC 4.0. The full terms, and what we may publish, are in `docs/data-licensing.md`.

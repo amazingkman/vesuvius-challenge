@@ -8,6 +8,7 @@ Each entry says **what** changed, **why**, and **what it builds on** (citation k
 ## [Unreleased]
 
 ### Added
+- 2026-11-01 — `docs/security.md` (threat model, rules R1–R5, audit log), DR-010, and WO-005 (security hardening; must merge before WO-003). `CLAUDE.md` gains security as hard rule 0. Why: the public repository must not expose secrets or machine identity. A full-history audit found no secrets.
 - 2026-11-01 — WO-002 (with addenda 1 and 2): the LPSF estimator and the synthetic-sheet harness.
   - `vesuvius_challenge.lpsf`: in-plane band-pass; non-circular depth window (E(k) = band-passed variance × ρ, Gaussian prior on k₀, cap `w_max`); two shift estimators, generalised phase correlation with matrix-DFT zooming and one resample-and-recorrelate pass (default), and multi-layer symmetric Lucas–Kanade; Σ from a cross structure tensor; metric-corrected gradient; screened, anisotropically weighted least-squares integration with z*; Frankot–Chellappa reference; consistency residual ∇z* − g; curl.
   - `vesuvius_challenge.synthetic`: papyrus-like 3-D sheets. Texture modes: A1, two-layer recto/verso, realistic through-thickness decorrelation fitted to WO-001. Meshes: graph-displaced, isometric tilted, stretched. Also a second sheet, Gaussian and Poisson noise, the reference trilinear renderer, and truth h along the rendered normal.
@@ -93,6 +94,7 @@ Each entry says **what** changed, **why**, and **what it builds on** (citation k
 - 2026-10-31 — Superseded planning docs: the combined WO-002/003, the old WO-001, and the bootstrap/handoff note. Content was folded into the new WOs and `docs/workflow.md`.
 
 ### Fixed
+- 2026-11-01 — Removed an absolute home path (which included the username) from five WO-001 run records, now `<repo>`-relative, and the workstation hostname from three docs. Both remain in git history; see `docs/security.md`.
 - 2026-11-01 — `vch render` no longer records a skipped render as a result: `vc_render_tifxyz` exits 0 without rendering when its outputs exist, so the command now refuses to run over existing layers unless `--overwrite` is given. Why: this made a reproduction check falsely pass. Builds on: `villa`.
 - 2026-10-31 — Primer corrections (full table in `docs/primer.md` §7):
   - segment 20241108120732 is Scroll 5, not Scroll 1;

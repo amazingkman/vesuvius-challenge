@@ -4,6 +4,11 @@ You are executing a work order (WO) for `vesuvius-challenge`. The Planner (a sep
 
 ## Hard rules
 
+0. **Security first** (`docs/security.md`, DR-010). This repository is public.
+   - Never commit secrets or credential files.
+   - Never write absolute paths, usernames, hostnames or IPs into any tracked file, run record, report or commit message. Use `<repo>/`-relative paths.
+   - Run the pre-commit hooks before every commit (WO-005).
+   - Never run code from an outside contributor's PR on the workstation before Kevin has reviewed it.
 1. **Never commit scroll data.** Nothing from the data server goes under git: no volumes, surface volumes, tifxyz meshes, `.obj`, `.ppm`, or renders. `data/` is gitignored; keep it that way. Manifests (IDs, URLs, checksums) are fine.
 2. **Never publish or commit renders that show legible text or ink** (`docs/data-licensing.md`).
 3. **Stay in scope.** Do what the WO says and nothing in its "Out of scope" section. If the WO is wrong or blocked, stop and write the problem in the provenance log. Don't improvise a redesign.

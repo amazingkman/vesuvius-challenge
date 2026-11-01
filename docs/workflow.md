@@ -6,7 +6,7 @@
 |---|---|---|---|
 | **Planner** | claude.ai Project "Vesuvius Challenge" | Research, design review, decision records, work orders, report review | Write implementation code; access the repo or data directly |
 | **Cloud** | claude.ai/code on GitHub `vesuvius-challenge` | Pure-code WOs: library code, synthetic harness, tests, CI, docs, upstream PR drafts | Access scroll data; run Podman/VC3D; use a GPU; run long jobs |
-| **VSCode** | Claude Code in VSCode on Duskrider (Ubuntu 24.04, RTX Pro 4000 Blackwell 24 GB, 64 GB RAM) | Data download, Podman/VC3D renders, real-data runs, profiling | Commit anything under `data/` |
+| **VSCode** | Claude Code in VSCode on the local workstation (Ubuntu 24.04, RTX Pro 4000 Blackwell 24 GB, 64 GB RAM) | Data download, Podman/VC3D renders, real-data runs, profiling | Commit anything under `data/` |
 | **Kevin** | — | Reviews and merges every PR; Discord checks; prize submissions; anything public | — |
 
 ## Work order lifecycle

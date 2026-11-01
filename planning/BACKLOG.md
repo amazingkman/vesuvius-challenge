@@ -14,3 +14,4 @@ Each item becomes a WO only when its precondition is met.
 | **Tag-based secondary validation** (Approved vs. Defective) | Tags obtainable (Discord ask) | Dropped from WO-003 rev 2 |
 | **Build VC3D from source at the pin** | A WO needs a flag the May image lacks (e.g. `--flip-normals`) | DR-008 item 4 |
 | **villa PR: `vc_render_tifxyz` silently skips when outputs exist** (report as an issue, or a docs note) | Kevin's call | Found in WO-001; it can make reproduction checks pass falsely. Small, useful upstream report |
+| **Optional history rewrite** (`git filter-repo --replace-text`, then a force-push, plus a GitHub Support request to purge cached PR refs) | Kevin decides (DR-010) | Removes the old username path and hostname from branch history only |
