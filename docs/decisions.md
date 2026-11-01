@@ -51,6 +51,13 @@ Our own design choices are always welcome: the interface, rigor, documentation, 
 - **Phase 1 is CPU-only.** torch and nvitop are added when the first GPU work order arrives.
 - **UX floor:** every program meets the `python-lab-ux` conventions (rich, typer CLI `vch` with `selftest`/`run`/`report`, JSON run records, graceful interrupt).
 
+**Addendum 2026-11-01 (WO-001, pin record).** The record above stands; these are the values it left open.
+
+- **VILLA_SHA = `d57c28ebee8776b618f9851c2289cc407ea99dd4`** (from `uv.lock`; commit dated 2026-10-31 11:23:44 -0500). The installed package reports the same commit.
+- **Podman image digest = `sha256:b2509de2c107852799a5077fd2038a917549a1d1e3665d5a1919c955858d698a`**, from `podman image inspect --format '{{.Digest}}'`. This is the linux/amd64 manifest. The multi-arch index that `:edge` resolves to is `sha256:bad516f66001abca759454cc43e4fd11e5b19aa55d36bdc2043817291c8083c4`. `vch render` addresses the image by the amd64 digest.
+- **The image and the pin are different code.** The image was built on 2026-05-13 from villa `1e3f4c021f4e53bea3867772ed05f51a7e586a9c`, about five and a half months before VILLA_SHA. `:edge` and `:main` on GHCR both still resolve to that build (checked 2026-11-01), so this is the newest published image, not a stale local pull. Our Python runs VILLA_SHA; our renders run May code. Details and consequences: `reports/2026-11-wo001/upstream-audit.md`.
+- **Dependencies added beside the pin, which did not move:** `opencv-python-headless` and `numba`, which `vesuvius.tifxyz` imports but `vesuvius[volume-only]` does not install, and `imagecodecs`, which LZW-compressed TIFFs need.
+
 ---
 
 ## DR-005 — 2026-10-31 — Roles: Planner, Cloud, VSCode

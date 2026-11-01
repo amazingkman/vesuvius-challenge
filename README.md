@@ -41,6 +41,7 @@ vesuvius-challenge/
 │   └── BACKLOG.md
 ├── src/vesuvius_challenge/  # installable package (CLI: `vch`)
 ├── tests/                   # pytest + hypothesis; synthetic fixtures only (no scroll data)
+├── manifests/               # IDs, URLs, checksums of fetched segments (no scroll data)
 ├── scripts/  notebooks/  reports/YYYY-MM-name/
 └── data/                    # gitignored: raw/ segments/ renders/ derived/
 ```
@@ -51,11 +52,44 @@ Python 3.14 is required because villa `main`'s `vesuvius` package declares `requ
 
 ```bash
 uv sync                      # resolves the pinned villa commit from uv.lock
-uv run vch --help            # available once WO-002 lands
+uv run vch --help            # stages: survey, fetch, render, verify-io, selftest
+uv run vch selftest          # fast paths against slow references; synthetic data only
 podman pull ghcr.io/scrollprize/villa/volume-cartographer:edge   # renderer, needed from WO-001 on
 ```
 
-Dependencies (see `pyproject.toml`): vesuvius[volume-only] (git, pinned), numpy, scipy, scikit-image, tifffile, zarr, matplotlib, xarray, rich, typer, humanize, psutil, pydantic, tomli-w, pyarrow, duckdb; dev: pytest, hypothesis, ruff, pyinstrument.
+Dependencies (see `pyproject.toml`): vesuvius[volume-only] (git, pinned), numpy, scipy, scikit-image, tifffile, zarr, matplotlib, xarray, rich, typer, humanize, psutil, pydantic, tomli-w, pyarrow, duckdb, opencv-python-headless, numba, imagecodecs; dev: pytest, hypothesis, ruff, pyinstrument.
+
+## Data access
+
+All reads are anonymous. `vch survey` and `vch fetch` use plain HTTPS against `s3://vesuvius-challenge-open-data/`, so no AWS account or credentials are needed.
+
+```bash
+uv run vch survey PHerc0139              # data/derived/survey/PHerc0139.parquet + .run.json
+uv run vch fetch PHerc0139 20260127000000  # data/segments/PHerc0139/20260127000000/
+```
+
+- **Survey output:** one row per segment, with `id`, `has_tifxyz`, mesh size, `tags`, area, `path` and `superseded`, plus which volume the mesh belongs to and whether that volume is on S3. Legacy `paths/` folders on dl.ash2txt.org are included unless you pass `--no-legacy`, because `_superseded` folders exist only there.
+- **Mesh layout on S3:** `{sample}/segments/<dir>/mesh/<id>-on-<volume>-<res>.tifxyz/{x,y,z}.tif + meta.json`. A segment has one such folder per registered volume. Pick the one matching the volume you render. `vch fetch` picks the volume the segment was traced on; `--volume` overrides that.
+- **Tags:** public `meta.json` files carry no `approved` or `defective` tags, on S3 or in legacy folders. See `reports/2026-11-wo001/data-survey.md` before relying on review status.
+- **Resume and integrity:** an interrupted `vch fetch` keeps a `.part` file and continues from it with `Range` and `If-Range`. `MANIFEST.json` records URL, size, ETag and SHA-256, and a copy goes to `manifests/`, which is committed. The data itself never is.
+- **`vesuvius.Volume`:** use the `s3://` form with `anon=True`. Over `https://` it cannot list the group's arrays.
+
+## Rendering
+
+`vch render` runs VC3D's `vc_render_tifxyz` in Podman, as an external process, by image digest. It streams the volume from S3, so only the voxels near the crop are read.
+
+```bash
+uv run vch render data/segments/PHerc0139/20260127000000 \
+    --num-slices 21 --slice-step 1 --crop 18528,14248,1024,1024
+uv run vch verify-io data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024
+```
+
+- **Output:** `data/renders/<sample>/<segment>/<settings>/layers/NN.tif`, plus `render.run.json` holding the full command, image digest, flags, on-surface layer and a pixel hash for each layer.
+- **On-surface layer:** layer `k` sits at `(k - (N-1)/2) * step` voxels, so `k0 = (N-1)/2` for odd `N` (21 layers: `k0 = 10`). **An even `N` has no on-surface layer.** Layer numbers are in our own renders; published surface volumes use other conventions.
+- **Direction:** with this image, rising layer number moves along the *negative* `vesuvius` normal (measured, see `reports/2026-11-wo001/upstream-audit.md`).
+- **Crop:** `x,y,width,height` in output pixels. At `--scale 1 --group-idx 0`, one pixel is one level-0 voxel and the surface measures `grid size / meta.json scale`.
+- **`verify-io`:** reads the same surface through `vesuvius.tifxyz` and `vesuvius.Volume` and correlates it with the render, which proves both paths agree.
+- **Image age:** the newest published image dates from 2026-05-13, older than our villa pin (DR-004 addendum), and it has no `--flip-normals` flag.
 
 ## Data and attribution
 
@@ -63,4 +97,4 @@ Scroll data is never committed or redistributed. Scrolls 1–4 and Fragments 1�
 
 ## Status
 
-See `CHANGELOG.md` and `planning/`. As of 2026-10-31: the environment is scaffolded and WO-001 to WO-004 are issued.
+See `CHANGELOG.md` and `planning/`. As of 2026-11-01: WO-001 is complete apart from the open items in `reports/2026-11-wo001/`, and WO-002 to WO-004 are issued.

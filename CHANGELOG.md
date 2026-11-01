@@ -8,6 +8,10 @@ Each entry says **what** changed, **why**, and **what it builds on** (citation k
 ## [Unreleased]
 
 ### Added
+- 2026-11-01 — `vch` CLI with `survey`, `fetch`, `render`, `verify-io` and `selftest`, at the python-lab-ux floor (banner, live progress, explanations, statistics, graceful Ctrl-C, summary, JSON run record). `vch render` runs `vc_render_tifxyz` in Podman by image digest. `verify-io` is an addition to the WO's list: objective 1 needs proof that the `vesuvius` read path and the renderer agree. Why: WO-001. Builds on: `villa`, `open_data_repo`, `scrollprize_data`.
+- 2026-11-01 — WO-001 reports in `reports/2026-11-wo001/`: `upstream-audit.md`, `data-survey.md`, `code-search-hits.tsv` (every hit at the pin, with a judgment) and survey tables for all 14 samples with segments. Manifests for four PHerc0139 segments in `manifests/`. Why: closes the primer section 8 gaps and supplies the DR-002 novelty search. Builds on: `villa`, `villa_estimate_canvas_offset`, `villa_atlas_overlay`.
+- 2026-11-01 — DR-004 addendum recording VILLA_SHA and the Podman image digest, including that the newest published image predates the pin by about five and a half months. Builds on: `villa`.
+- 2026-11-01 — Dependencies `opencv-python-headless`, `numba` and `imagecodecs`. `vesuvius.tifxyz` does not import under `vesuvius[volume-only]` without the first two, and LZW TIFFs need the third. The villa pin did not change.
 - 2026-10-31 — Repository `vesuvius-challenge` scaffolded: uv package `vesuvius_challenge`, Python 3.14, MIT license, public on GitHub. `vesuvius[volume-only]` is installed from ScrollPrize/villa at a pinned commit. Why: villa `main` requires Python 3.14 and PyPI 0.2.4 is stale (DR-004). Builds on: `villa`.
 - 2026-10-31 — Planning set rewritten after the 2026-10-31 research pass:
   - `docs/primer.md` (current state, plus an audit of the June claims);
@@ -21,6 +25,8 @@ Each entry says **what** changed, **why**, and **what it builds on** (citation k
   Why: the June documents contained material errors (see Changed). Builds on: `scrollprize_prizes`, `scrollprize_winners`, `scrollprize_open_problems`, `villa`.
 
 ### Changed
+- 2026-11-01 — Console script renamed from `vesuvius-challenge` to `vch`, as `CLAUDE.md` specifies.
+- 2026-11-01 — Citation notes updated with verified PR status: #2224, #2365, #2368 and #2373 are open; #2358 is merged and holds no offset report. `tifxyz_doctor` now points at its repository.
 - 2026-10-31 — Project renamed from "Vesuvius Coherence" (`vesuvius_coherence`) to "Vesuvius Challenge" (`vesuvius-challenge` / `vesuvius_challenge`). The README states the project is independent and not affiliated with the Vesuvius Challenge team.
 - 2026-10-31 — Method A re-scoped and renamed from "coherence mapping" to **Layer Phase-Shift Field (LPSF)** (DR-002):
   - the refinement loop is now an error signal for existing tools (`vc_objrefine`, Lasagna) rather than a new method;
