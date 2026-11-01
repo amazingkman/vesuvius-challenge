@@ -8,6 +8,7 @@ Each entry says **what** changed, **why**, and **what it builds on** (citation k
 ## [Unreleased]
 
 ### Added
+- 2026-11-01 — Planner review of WO-002: DR-011 (accepted, with the failed P1/P2 and Σ criteria kept on record; validity envelope; depth-decorrelation pull as the decisive real-data risk); DR-012 (upstream contribution policy); WO-006 (Σ calibration, decorrelation-gain diagnostic, across-fibre directional estimate). Builds on: `reports/2026-11-wo002/report.md`.
 - 2026-11-01 — `docs/security.md` (threat model, rules R1–R5, audit log), DR-010, and WO-005 (security hardening; must merge before WO-003). `CLAUDE.md` gains security as hard rule 0. Why: the public repository must not expose secrets or machine identity. A full-history audit found no secrets.
 - 2026-11-01 — WO-002 (with addenda 1 and 2): the LPSF estimator and the synthetic-sheet harness.
   - `vesuvius_challenge.lpsf`: in-plane band-pass; non-circular depth window (E(k) = band-passed variance × ρ, Gaussian prior on k₀, cap `w_max`); two shift estimators, generalised phase correlation with matrix-DFT zooming and one resample-and-recorrelate pass (default), and multi-layer symmetric Lucas–Kanade; Σ from a cross structure tensor; metric-corrected gradient; screened, anisotropically weighted least-squares integration with z*; Frankot–Chellappa reference; consistency residual ∇z* − g; curl.
@@ -56,6 +57,7 @@ Each entry says **what** changed, **why**, and **what it builds on** (citation k
   Why: the June documents contained material errors (see Changed). Builds on: `scrollprize_prizes`, `scrollprize_winners`, `scrollprize_open_problems`, `villa`.
 
 ### Changed
+- 2026-11-01 — WO-003 rev 4: a pre-registered feasibility pilot on a held-out segment gates the main study; LK becomes a pre-specified secondary estimator; gap-width stratification added. WO-004 cancelled (DR-012). WO-005: images allowed only when listed in `FIGURES.md` with their provenance. `docs/method-lpsf.md`: validity envelope and depth-decorrelation pull. `docs/security.md` R5: email public by the owner's choice.
 - 2026-11-01 — Patch resampling in LPSF refinement now uses prefiltered cubic B-splines instead of Keys cubic convolution. Keys' phase error biased refined slopes by +10% for 8-px texture across the tilt (`reports/2026-11-wo002/diagnosis-overshoot-keys-resampler.json`); every reported run uses the fixed code. Builds on: `keys1981`.
 - 2026-11-01 — `vch synth run` survives a killed worker: it rebuilds the pool, retries in-flight cases once, checkpoints Parquet every 50 cases and always writes what finished. The synthetic volume generator works in float32 slabs. Why: the first full sweep was killed (most likely out of memory) and lost every result.
 - 2026-11-01 — WO-003 reissued as rev 3 (DR-009), before any real-data LPSF run: step-0 physical diagnostics and W_max; baseline B4; re-specified S1 to S3; a value claim requiring LPSF to beat or complement B4. WO-002 Addendum 2 (binding). `docs/method-lpsf.md` revised (exact geometry, metric, band-pass, estimator choice, consistency residual, failure modes, normal-field prior art).

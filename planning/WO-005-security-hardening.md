@@ -26,7 +26,10 @@ Make it mechanically impossible to commit secrets, machine identity or render-de
    - gitleaks;
    - `detect-private-key`, `check-added-large-files` (500 kB), `check-merge-conflict`;
    - a local hook running the identity/path scan from item 2;
-   - a local hook rejecting `*.png|jpg|jpeg|tif|tiff|bmp|webp` outside `docs/assets/`.
+   - a local hook that rejects any `*.png|jpg|jpeg|tif|tiff|bmp|webp|svg|pdf` **not listed in `FIGURES.md`** at the repo root.
+     - Each entry gives the path, the provenance class (`synthetic` or `field-map`; render-derived is never allowed) and the generating command.
+     - Seed `FIGURES.md` with the seven WO-002 synthetic figures in `reports/2026-11-wo002/generated/`.
+     - Also strip non-essential image metadata (the PNG text chunks) in the figure writer.
    Document `uv run pre-commit install` in the README.
 4. **CI** (`.github/workflows/ci.yml`, extending WO-002's):
    - `permissions: contents: read`;

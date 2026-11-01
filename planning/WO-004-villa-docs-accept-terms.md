@@ -1,6 +1,6 @@
 # WO-004 — Upstream docs fix in villa: the stale `vesuvius.accept_terms` reference
 
-Executor: **Cloud** (Kevin first forks ScrollPrize/villa to his account and attaches the fork to the Cloud session; fallback: VSCode with `gh`)  Depends on: none  Status: issued 2026-10-31
+Executor: **Cloud** (Kevin first forks ScrollPrize/villa to his account and attaches the fork to the Cloud session; fallback: VSCode with `gh`)  Depends on: none  Status: **CANCELLED 2026-11-01 (DR-012)**. Low-value upstream PRs are what the villa maintainers asked contributors to stop sending. Mention the stale line on Discord or in issue #199 only if it comes up naturally. (Originally issued 2026-10-31.)
 
 ## 1. Objective
 

@@ -1,6 +1,6 @@
-# WO-003 — Real-data validation: injected perturbations vs. baselines (rev 3)
+# WO-003 — Real-data validation: injected perturbations vs. baselines (rev 4)
 
-Executor: **VSCode**  Depends on: WO-001 (merged) and WO-002 (estimator, merged)  Status: **rev 3, issued 2026-11-01. Supersedes rev 2 (DR-008) and rev 1**, per DR-009 (external derivation review). No LPSF output on real data existed when this revision was written. Thresholds below are pre-registered and are not changed after data is seen. If something cannot be run as written, stop and report; don't adapt.
+Executor: **VSCode**  Depends on: WO-001 (merged) and WO-002 (estimator, merged)  Executor note: also depends on **WO-005** (anonymous run records) and **WO-006** (calibrated Σ, gain diagnostic) being merged.  Status: **rev 4, issued 2026-11-01. Supersedes rev 3**, per DR-011: adds the §4a feasibility pilot (go/no-go), the LK secondary estimator and gap-width stratification. Rev 3 superseded rev 2 (DR-008) and rev 1 per DR-009. No LPSF output on real data existed when this revision was written. Thresholds below are pre-registered and are not changed after data is seen. If something cannot be run as written, stop and report; don't adapt.
 
 ## 1. Objective
 
@@ -30,6 +30,29 @@ Find out whether LPSF recovers known, injected normal-offset errors on **real** 
    - (c) the fraction of gap-layer patches with ρ above the in-sheet 25th percentile, as a fixed-pattern artifact indicator.
 4. **Record before going on.** Log C, the timings, the placements, W_max and the diagnostics in the provenance log. No LPSF shift or offset numbers are computed in step 0.
 
+## 4a. Feasibility pilot: go/no-go before the main study (DR-011)
+
+**Data:** one **held-out** PHerc0139 segment, not among the four study segments and not used later. Choose it by a seeded random draw among segments on volume `20260102150214` with valid tifxyz, and record the choice before rendering. Use two 2048-px crops.
+
+1. **Physical measurements** with WO-006's `gain_map` on the original renders:
+   - the distributions of L, ℓ_along, ℓ_across and fibre angle;
+   - r(d) in-sheet against in-gap (void), as in step 0(b), to settle whether depth decorrelation is material.
+2. **Two pilot perturbations** per crop, rendered for real:
+   - a sinusoidal corrugation (A = 10 µm, λ = 0.6 mm) with its tilt direction **along** the dominant fibre direction;
+   - the same with its tilt direction **across** it.
+3. **Paired LPSF**, full and directional, using the calibrated Σ.
+
+**GO, pre-registered, all three required:**
+- (i) the across-fibre case, full or directional estimate, has a signed slope ratio against window-averaged truth of 0.7–1.3, with a 95% block-bootstrap CI excluding 0;
+- (ii) the confident-wrong-sign rate is ≤ 10% for the estimate that will be used (full if it passes the along-fibre case as well, otherwise directional);
+- (iii) |predicted − measured gain| ≤ 0.3 on both cases.
+
+**Outcomes:**
+- **GO with full estimate** if the along-fibre case also meets (i) and (ii). Otherwise **GO with directional**, and WO-003 runs with `directional=True` everywhere.
+- **NO-GO** otherwise. Stop, write `reports/2026-11-wo003/pilot.md`, and return to the Planner. The main study does not run.
+
+Pilot numbers are reported in full whatever the outcome. The pilot segment's data is never reused in S1–S3.
+
 ## 5. Perturbations
 
 Perturbations are applied to stored tifxyz vertices along **n**, using the VC3D / layer-increasing convention. With `vesuvius.tifxyz` normals, that means `−n_vesuvius`. Each family uses one fixed seed.
@@ -55,7 +78,9 @@ Perturbations are applied to stored tifxyz vertices along **n**, using the VC3D 
   - If its output is not on the input grid, or it will not run on a crop, record B2 as "not comparable" with the reason. Do not tune its parameters.
 - **B4, structure-tensor normal.** Per patch, the tilt of the mesh normal relative to the sheet normal from the 3D structure tensor of the CT. Use `vesuvius.compute_st` if it runs on the crop region; otherwise a documented Gaussian-derivative structure tensor with scales chosen from step 0, frozen before LPSF runs. Integrate it with the same solver to get ĥ_B4.
 - **B3, TIFXYZ Doctor.** Run its normal-offset cue if it runs on these meshes (check the license first); otherwise record why not.
+- **Secondary estimator (pre-specified, DR-011):** LK with the same frozen settings. All S1–S3 numbers are reported for both; the gate uses phase correlation.
 - **Stratification.** Patch contrast (std) tertiles and structure-tensor coherence tertiles.
+- **Gap-width stratification (pre-specified secondary, DR-011):** local gap between wraps from step 0 (clear > 10 voxels / narrow 3–10 / touching < 3). Report S2 and the value claim (LPSF, B4, fusion) per stratum. Hypothesis: B4 leads where gaps are clear; LPSF or the fusion helps where wraps touch.
 
 ## 7. Pre-registered success criteria
 

@@ -156,3 +156,44 @@ The full-text search of villa at `d57c28e` judged all 2,483 hits (`reports/2026-
 4. **GitHub settings** (Kevin): secret scanning and push protection; Dependabot alerts; branch protection on `master`; 2FA; Cloud app scoped to this repo; private commit email.
 
 **Reversal.** None. Security rules only tighten.
+
+---
+
+## DR-011 — 2026-11-01 — WO-002 outcome: accepted with failed criteria on record; real-data feasibility pilot gates WO-003
+
+**Context.** WO-002 (PR #2, `reports/2026-11-wo002/report.md`) was run on synthetic data only: 1,460 cases. Four outcomes matter:
+- the pre-registered P1/P2 slope criterion **failed**;
+- the new Σ-calibration criterion **failed** in every mode;
+- offset recovery, the consistency-residual step detector and window placement **passed** in A1 mode;
+- in the realistic-decorrelation mode (matched to WO-001's measured r(d)), slopes are **orientation-dependent and sign-reversed** when fibres run within about 30° of the tilt direction, for both estimators.
+
+**Planner review.**
+1. **The P1/P2 failure is a validity envelope, not a falsification.** Within θ ≤ 10° on a 20-voxel sheet, and up to 20° on a 40-voxel sheet, the ratio is 0.93–1.01. The collapse at 20° comes from P·tan θ exceeding the *effective* sheet thickness (nominal thickness minus about 6–9 voxels of edge). **The criterion as written stays recorded as FAILED.** It is not relabelled. The method doc gains the envelope (P·tan θ ≲ T_eff − 6 voxels). This is **not** a DR-002 reversal: the reversal condition was falsification on A1 sheets inside the model's domain, and inside that domain the physics held.
+2. **The decorrelation pull is the decisive risk.** When texture decorrelates with depth over a length L, the correlation maximum is pulled toward constant depth. The first-order gain derived by Cloud is ≈ 1 − 2ℓ_t²/L², where ℓ_t is the in-plane correlation length along the tilt direction. The predicted sign, trend and limit match the measurements; the size of the effect across fibres is not explained. On real papyrus, noise is small (DR-009 fit) and blur can only *raise* depth correlation, so WO-001's falling r(d) points to **material** decorrelation. **Prior expectation: real data behaves like the realistic mode**, with usable across-fibre components and biased along-fibre ones. This must be measured before WO-003 spends roughly 24 hours of rendering.
+3. **Estimator:** phase correlation stays the default, per the rule pre-stated before the runs. Changing it after seeing results would be post hoc. LK runs as a **pre-specified secondary** estimator in WO-003. Both are reported.
+4. **Σ must be calibrated before any real-data use** (WO-006). No QC threshold or integration weight relies on the uncalibrated Σ.
+5. **The PR is accepted for merge:** CI green; no identity leaks in the added files (Planner scan); figures are synthetic and carry only Matplotlib metadata.
+
+**Decisions.**
+- **WO-006 (Cloud) before WO-003:**
+  - calibrate Σ (κ and a relative floor);
+  - add a per-patch decorrelation-gain diagnostic from measured L and ℓ_t;
+  - add a directional variant that keeps only the across-fibre component and reports the along-fibre component as unobserved;
+  - validate all three on synthetic data across fibre orientations.
+- **WO-003 rev 4: a go/no-go feasibility pilot on a held-out PHerc0139 segment comes first** (pre-registered below and in the WO). A no-go stops WO-003 and returns to the Planner.
+- **Gap-width stratification** (clear / narrow / touching wraps, from step 0) becomes a pre-specified secondary analysis of S2 and the value claim, following the B4-versus-LPSF physics in Argon's note (`notes/2026-11-01-gemini-review.md` follow-up).
+- **Honest prior for the value claim:** B4 (structure-tensor normal) does not suffer the decorrelation pull. If the pilot shows that only across-fibre components are usable, LPSF's claim narrows to "complementary where boundary contrast fails". That claim survives only if the gap-stratified fusion test shows it.
+
+**Reversal.** If the pilot passes cleanly on full 2-D slopes (not only across-fibre), the directional restriction can be dropped for WO-003.
+
+---
+
+## DR-012 — 2026-11-01 — Upstream contribution policy: no low-value PRs to villa
+
+**Context.** A VC3D maintainer (Discord, 2026-11-01; T3, Project note only) announced that scripts the team no longer uses will be retired, because PRs to unused scripts, many of them LLM-generated, have become a major time sink.
+
+**Decision.**
+1. **WO-004 (the villa README `accept_terms` fix) is cancelled.** Even a correct docs fix is the kind of low-value, LLM-authored PR the team asked people to stop sending. We mention the stale line once on Discord, or in issue #199, only if it comes up naturally.
+2. **No PR to villa without the team's prior interest.** Upstream integration (BACKLOG) starts with a Discord conversation that shows the Annotation Team or maintainers want it. Until then, our tools read and write their formats standalone.
+3. Bug reports go to existing issues, with a minimal reproduction, only for tools the team actively uses. For example, the `vc_render_tifxyz` skip-on-existing-outputs behaviour is reported only if the team confirms it affects them.
+4. Our PRs, when invited, are small, human-reviewed by Kevin, and disclose AI assistance.
