@@ -1,0 +1,69 @@
+% docs/citations.bib — vesuvius-challenge
+% Every entry: tier (T1 peer-reviewed/official, T2 VC Substack/prize posts, T3 community) and access date.
+% "verified" = URL/DOI checked by the Planner research pass on the stated date. Unverified entries must be checked before release.
+
+% ---------- Method papers (T1) ----------
+@article{foroosh2002,
+  author  = {Foroosh, Hassan and Zerubia, Josiane B. and Berthod, Marc},
+  title   = {Extension of Phase Correlation to Subpixel Registration},
+  journal = {IEEE Transactions on Image Processing}, volume = {11}, number = {3}, pages = {188--200}, year = {2002},
+  doi     = {10.1109/83.988953}, note = {T1; verified 2026-10-31}
+}
+@article{guizar2008,
+  author  = {Guizar-Sicairos, Manuel and Thurman, Samuel T. and Fienup, James R.},
+  title   = {Efficient subpixel image registration algorithms},
+  journal = {Optics Letters}, volume = {33}, number = {2}, pages = {156--158}, year = {2008},
+  doi     = {10.1364/OL.33.000156}, note = {T1; verified 2026-10-31}
+}
+@article{frankot1988,
+  author  = {Frankot, Robert T. and Chellappa, Rama},
+  title   = {A Method for Enforcing Integrability in Shape from Shading Algorithms},
+  journal = {IEEE Transactions on Pattern Analysis and Machine Intelligence}, volume = {10}, number = {4}, pages = {439--451}, year = {1988},
+  doi     = {10.1109/34.3909}, note = {T1; verified 2026-10-31}
+}
+
+% ---------- Data (T1) ----------
+@misc{parsons2023,
+  author = {Parsons, Stephen and Parker, C. Seth and Chapman, Christy and Hayashida, Mami and Seales, W. Brent},
+  title  = {EduceLab-Scrolls: Verifiable Recovery of Text from Herculaneum Papyri using X-ray CT},
+  year   = {2023}, eprint = {2304.02084}, archivePrefix = {arXiv},
+  note   = {T1; required citation for Scrolls 1-4 / Fragments 1-6; URL from June primer, re-verify before release}
+}
+@misc{scrollprize_data,       title = {The Data}, howpublished = {\url{https://scrollprize.org/data}}, note = {T1; accessed 2026-10-31}}
+@misc{open_data_repo,         title = {ScrollPrize/open-data (format documentation)}, howpublished = {\url{https://github.com/ScrollPrize/open-data}}, note = {T3; accessed 2026-10-31}}
+
+% ---------- Official program pages (T1) ----------
+@misc{scrollprize_prizes,     title = {Open Prizes}, howpublished = {\url{https://scrollprize.org/prizes}}, note = {T1; accessed 2026-10-31}}
+@misc{scrollprize_winners,    title = {Winners}, howpublished = {\url{https://scrollprize.org/winners}}, note = {T1; accessed 2026-10-31}}
+@misc{scrollprize_open_problems, title = {2026 Open Problems (updated 2026-10-14)}, howpublished = {\url{https://scrollprize.org/2026_open_problems}}, note = {T1; accessed 2026-10-31}}
+@misc{scrollprize_community_projects, title = {Community Projects}, howpublished = {\url{https://scrollprize.org/community_projects}}, note = {T1; accessed 2026-10-31}}
+@misc{scrollprize_tutorial_vc, title = {Volume Cartographer tutorial}, howpublished = {\url{https://scrollprize.org/tutorial_VC}}, note = {T1; accessed 2026-10-31}}
+
+% ---------- Papers on unwrapping (T1) ----------
+@misc{henderson_spiral,       title = {Spiral fitting for whole-scroll segmentation (WACV 2026)}, eprint = {2512.04927}, archivePrefix = {arXiv}, note = {T1; author list to be filled from arXiv before release; accessed 2026-10-31}}
+@misc{pherc1667_preprint,     title = {PHerc. 1667 full reading / June 2026 results preprint}, eprint = {2606.29085}, archivePrefix = {arXiv}, note = {T1; title/authors to be filled from arXiv before release}}
+
+% ---------- Substack (T2) ----------
+@misc{substack_grand_prize_2027, title = {A new \$1M Grand Prize for 2027}, howpublished = {\url{https://scrollprize.substack.com/p/a-new-1m-grand-prize-for-2027}}, note = {T2; accessed 2026-10-31}}
+@misc{substack_first_letters_343, title = {\$50K First Letters Prize awarded (PHerc. 343)}, howpublished = {\url{https://scrollprize.substack.com/p/50k-first-letters-prize-awarded-for}}, note = {T2; accessed 2026-10-31}}
+
+% ---------- ScrollPrize repositories, PRs, issues (T3) ----------
+@misc{villa,                  title = {ScrollPrize/villa monorepo (vesuvius, volume-cartographer/VC3D, lasagna, spiral-fitting, dinovol)}, howpublished = {\url{https://github.com/ScrollPrize/villa}}, note = {T3; MIT (villa), VC3D components GPL-3.0; pinned SHA in docs/decisions.md DR-004; accessed 2026-10-31}}
+@misc{dinovol,                title = {dinovol: 3D DINO for scroll CT}, howpublished = {\url{https://github.com/ScrollPrize/villa}}, note = {T1/T3 per Open Problems; checkpoints on Hugging Face; accessed 2026-10-31}}
+@misc{vesuvius_pypi,          title = {vesuvius (PyPI) 0.2.4}, howpublished = {\url{https://pypi.org/project/vesuvius/}}, note = {T3; stale vs villa main; accessed 2026-10-31}}
+@misc{vc_objrefine_pr2224,    author = {ChaseHendrick}, title = {vc\_objrefine offset report (PR \#2224)}, howpublished = {\url{https://github.com/ScrollPrize/villa/pull/2224}}, note = {T3; merge status to verify in WO-001; accessed 2026-10-31}}
+@misc{villa_pr2358,           author = {bruniss}, title = {tifxyz object store; offset report on refine\_surface (PR \#2358)}, howpublished = {\url{https://github.com/ScrollPrize/villa/pull/2358}}, note = {T3; accessed 2026-10-31}}
+@misc{villa_pr2365,           title = {vesuvius.tifxyz read/write; [tifxyz] extra (PR \#2365)}, howpublished = {\url{https://github.com/ScrollPrize/villa/pull/2365}}, note = {T3; merge status unverified}}
+@misc{villa_pr2368,           author = {ChaseHendrick}, title = {vesuvius.snap\_labels (PR \#2368)}, howpublished = {\url{https://github.com/ScrollPrize/villa/pull/2368}}, note = {T3; merge status unverified}}
+@misc{villa_pr2373,           author = {yuichi916}, title = {Python surface-volume renderer from tifxyz (PR \#2373)}, howpublished = {\url{https://github.com/ScrollPrize/villa/pull/2373}}, note = {T3; merge status unverified}}
+@misc{villa_issue193,         title = {Methods for generating surface, fiber or ink labels (issue \#193)}, howpublished = {\url{https://github.com/ScrollPrize/villa/issues/193}}, note = {T3; accessed 2026-10-31}}
+@misc{villa_issue199,         title = {Out-of-date documentation (issue \#199)}, howpublished = {\url{https://github.com/ScrollPrize/villa/issues/199}}, note = {T3; accessed 2026-10-31}}
+@misc{fasp,                   author = {Schilling, Hendrik (waldkauz) and Johnson, Sean}, title = {FASP}, howpublished = {\url{https://github.com/hendrikschilling/FASP}}, note = {T3; state.tif hosting unverified; accessed 2026-10-31}}
+
+% ---------- Community prior art and baselines (T3 unless noted) ----------
+@misc{segmata,                author = {Gouttebroze, S.}, title = {segmata: surface refinement in khartes}, howpublished = {\url{https://github.com/sgoutteb/segmata}}, note = {T3 repo; awarded \$1K Apr 2025 per scrollprize.org/winners (T1); accessed 2026-10-31}}
+@misc{tifxyz_doctor,          title = {TIFXYZ Doctor v0.2 (progress prize, Jul 2026)}, howpublished = {\url{https://scrollprize.org/winners}}, note = {T1 award listing; repo URL to be added from the winners page; accessed 2026-10-31}}
+@misc{offset_sweep,           author = {LynnHenry}, title = {offset-sweep}, howpublished = {\url{https://github.com/LynnHenry/offset-sweep}}, note = {T3; negative result for brightest-layer snap; accessed 2026-10-31}}
+@misc{recto_offset,           author = {TAUIL Abd Elilah}, title = {recto-offset}, howpublished = {\url{https://github.com/TAUIL-Abd-Elilah/recto-offset}}, note = {T3; accessed 2026-10-31}}
+@misc{topological_grid,       author = {Diego-dcv}, title = {vesuvius-topological-grid (spectral coherence framework)}, howpublished = {\url{https://github.com/Diego-dcv/vesuvius-topological-grid}}, note = {T3; reason for LPSF rename; accessed 2026-10-31}}
+@misc{winding_phase,          author = {millerandmuller}, title = {winding-phase}, howpublished = {\url{https://github.com/millerandmuller/winding-phase}}, note = {T3; accessed 2026-10-31}}
