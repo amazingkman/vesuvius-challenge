@@ -1,0 +1,23 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# --- Vesuvius Challenge: scroll data is never committed (data agreement) ---
+data/
+*.zarr/
+*.tif
+*.tiff
+*.obj
+*.ppm
+# run records and caches
+runs/
+.cache/
+.ruff_cache/
+.pytest_cache/
