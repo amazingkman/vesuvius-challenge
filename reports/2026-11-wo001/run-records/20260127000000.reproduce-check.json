@@ -1,0 +1,13 @@
+{
+  "method": "layers/ moved aside, then results.command_shell run unchanged; hashes compared with the record",
+  "command": "podman run --rm --name vch-render-306975 --userns=keep-id -v /home/kevin-couch/vesuvius-challenge/data:/data ghcr.io/scrollprize/villa/volume-cartographer@sha256:b2509de2c107852799a5077fd2038a917549a1d1e3665d5a1919c955858d698a vc_render_tifxyz --volume /data/raw/remote-volume --remote-url https://vesuvius-challenge-open-data.s3.amazonaws.com/PHerc0139/volumes/20260102150214-2.399um-0.2m-78keV-masked.zarr --segmentation /data/segments/PHerc0139/20260127000000 --scale 1 --group-idx 0 --num-slices 21 --slice-step 1 --cache-gb 4 --tif-output /data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers --crop-x 18528 --crop-y 14248 --crop-width 1024 --crop-height 1024",
+  "image_digest": "sha256:b2509de2c107852799a5077fd2038a917549a1d1e3665d5a1919c955858d698a",
+  "exit_code": 0,
+  "first_render_seconds": 52.863268689019606,
+  "rerun_seconds": 55.50127863883972,
+  "renderer_reported_skip": false,
+  "layers": 21,
+  "layers_newly_written": 21,
+  "layers_with_identical_pixels": 21,
+  "layers_with_identical_files": 21
+}

@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from vesuvius-challenge!")
+"""Independent tools for the Vesuvius Challenge. See README.md."""

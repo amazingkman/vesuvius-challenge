@@ -65,3 +65,61 @@ Any phase-correlation or estimator code (that is WO-002, owned by Cloud); pertur
 ## 7. Provenance log (executor appends below)
 
 ---
+
+**Executor:** Claude Code (VSCode role) on Duskrider, 2026-10-31 to 2026-11-01. Branch `wo-001-environment-and-data-survey`, from `master` (the WO says `main`; the repo's default branch is `master`).
+
+### Pins
+
+| Item | Value |
+|---|---|
+| Villa | `d57c28ebee8776b618f9851c2289cc407ea99dd4` (`uv.lock`, unchanged) |
+| Image | `ghcr.io/scrollprize/villa/volume-cartographer`, `.Digest` `sha256:b2509de2c107852799a5077fd2038a917549a1d1e3665d5a1919c955858d698a`, built 2026-05-13 from `1e3f4c0` |
+| Reference clone | `~/src/villa`, depth 400, plus the single commit `1e3f4c0` |
+| Python | 3.14.10, uv 0.13.6 |
+
+### Commands
+
+```bash
+uv sync
+uv add opencv-python-headless numba imagecodecs
+uv run vch selftest
+for s in PHercParis4 PHerc0139 PHerc1667 PHerc0172 PHerc0500P2 PHerc0009B PHerc0814 PHerc1447 \
+         PHercMANBp PHerc0343P PHerc0800 PHerc0841 PHerc0332 PHercMAN5; do
+  uv run vch survey $s --out reports/2026-11-wo001/survey
+done
+uv run vch fetch PHerc0139 20260127000000      # also 20260210000000, 20260112000000, 20260115000000
+uv run vch render data/segments/PHerc0139/20260127000000 -n 21 -s 1 --crop 18528,14248,1024,1024 --overwrite
+uv run vch verify-io data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024 --figure
+# likewise: 20260210000000 crop 18688,14088; 20260112000000 crop 15288,11368; 20260115000000 crop 15368,11248
+# reproduction: mv layers layers.first, then run results.command_shell from render.run.json
+uvx --from ripgrep rg -n -i --no-heading --hidden -g '!.git' -- '<pattern>' .    # in ~/src/villa, one per pattern
+gh pr view <n> --repo ScrollPrize/villa
+```
+
+`ripgrep` was not installed, so it ran through `uvx` (15.1.0). The judgments in `code-search-hits.tsv` came from a one-off rule script that is not committed. The rule behind each row is its `reason` column.
+
+### Data
+
+Segments fetched: PHerc0139 20260127000000, 20260210000000, 20260112000000, 20260115000000, each on volume 20260102150214 (2.399 µm). IDs, URLs, sizes, ETags and SHA-256 are in `manifests/PHerc0139/`. Volume: `PHerc0139/volumes/20260102150214-2.399um-0.2m-78keV-masked.zarr`, streamed. FASP `state.tif`: see `reports/2026-11-wo001/data-survey.md`. A Paris 4 mesh (`20260701183148`) was downloaded to a scratch folder to test resume, then deleted. Compute: 16 CPU threads, 59 GB RAM; no GPU. Disk under `data/`: about 160 MB.
+
+### Blocked or not met
+
+- **Deliverables 5 and 6, "Approved" and "Defective":** no public metadata carries those tags (`data-survey.md` sections 2 and 3). Per CLAUDE.md rule 3 this was not redesigned around. The I/O proof ran on a labelled stand-in, and the study list is marked as containing no Approved segment. **Needs Kevin or the Planner.**
+- **Figure:** saved under `data/derived/figures/` (gitignored), not committed. No letters recognised, but ink cannot be ruled out at this scale. **Needs review.**
+- **Still unverified:** the November deadline (`/prizes` still showed October 31 at 2026-11-01 06:09 UTC), Discord (Kevin), and where team review tags live.
+
+### Surprises
+
+1. The newest published image is 5.5 months older than the pin; `:edge` equals `:main`.
+2. `estimate_canvas_offset.py` in villa already does tile-wise phase correlation of renders, for a different purpose.
+3. `vc_tifxyz_winding` is removed at the pin, and #2358 holds no offset report.
+4. `vesuvius.tifxyz` does not import under `volume-only`. Three dependencies added, pin unchanged.
+5. Mesh layout differs from the primer. `metadata.json` `width` and `height` do not describe `-on-` meshes, and 90 meshes are BigTIFF.
+6. Rising layer number runs along the negative `vesuvius` normal (measured on four segments).
+7. `vc_render_tifxyz` exits 0 and renders nothing when its outputs exist. This made my first reproduction check falsely pass, in 1.6 s. Fixed in `vch render`, and that check and the renders were redone.
+8. The Paris 4 notice bars publishing formal analyses until 25/06/2027, which affects WO-003 and probably `state.tif`.
+9. `inspect` does not mean poor: w044 has it and the highest ink AUC in villa issue #1912.
+
+### Scope notes
+
+`vch verify-io` was added beyond the WO's listed commands, because objective 1 needs a check that the `vesuvius` read path works. No estimator or phase-correlation code was written. `docs/citations.bib` notes were updated; `docs/primer.md` was not edited, and corrections for it are in `upstream-audit.md` section 8. `vesuvius-challenge-docs.tar.gz` and the empty `vesuvius-challenge/` folder in the repo root predate this WO and were left alone.

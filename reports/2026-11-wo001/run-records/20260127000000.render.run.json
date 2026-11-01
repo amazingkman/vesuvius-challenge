@@ -1,0 +1,493 @@
+{
+  "finished_at": "2026-11-01T05:59:04+00:00",
+  "image_digest": "sha256:b2509de2c107852799a5077fd2038a917549a1d1e3665d5a1919c955858d698a",
+  "outputs": [
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/00.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/01.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/02.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/03.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/04.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/05.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/06.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/07.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/08.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/09.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/10.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/11.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/12.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/13.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/14.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/15.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/16.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/17.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/18.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/19.tif",
+    "data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers/20.tif"
+  ],
+  "params": {
+    "cache_gb": 4,
+    "crop": {
+      "height": 1024,
+      "width": 1024,
+      "x": 18528,
+      "y": 14248
+    },
+    "group_idx": 0,
+    "num_slices": 21,
+    "scale": 1.0,
+    "segment_dir": "data/segments/PHerc0139/20260127000000",
+    "slice_step": 1.0,
+    "volume_url": "https://vesuvius-challenge-open-data.s3.amazonaws.com/PHerc0139/volumes/20260102150214-2.399um-0.2m-78keV-masked.zarr"
+  },
+  "partial": false,
+  "repo_commit": "d8044fbe1f01364c3934361b0ea1d6beb52e3d8a",
+  "reproduce": "uv run vch render data/segments/PHerc0139/20260127000000 -n 21 -s 1 --crop 18528,14248,1024,1024 --overwrite",
+  "results": {
+    "command": [
+      "podman",
+      "run",
+      "--rm",
+      "--name",
+      "vch-render-306975",
+      "--userns=keep-id",
+      "-v",
+      "/home/kevin-couch/vesuvius-challenge/data:/data",
+      "ghcr.io/scrollprize/villa/volume-cartographer@sha256:b2509de2c107852799a5077fd2038a917549a1d1e3665d5a1919c955858d698a",
+      "vc_render_tifxyz",
+      "--volume",
+      "/data/raw/remote-volume",
+      "--remote-url",
+      "https://vesuvius-challenge-open-data.s3.amazonaws.com/PHerc0139/volumes/20260102150214-2.399um-0.2m-78keV-masked.zarr",
+      "--segmentation",
+      "/data/segments/PHerc0139/20260127000000",
+      "--scale",
+      "1",
+      "--group-idx",
+      "0",
+      "--num-slices",
+      "21",
+      "--slice-step",
+      "1",
+      "--cache-gb",
+      "4",
+      "--tif-output",
+      "/data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers",
+      "--crop-x",
+      "18528",
+      "--crop-y",
+      "14248",
+      "--crop-width",
+      "1024",
+      "--crop-height",
+      "1024"
+    ],
+    "command_shell": "podman run --rm --name vch-render-306975 --userns=keep-id -v /home/kevin-couch/vesuvius-challenge/data:/data ghcr.io/scrollprize/villa/volume-cartographer@sha256:b2509de2c107852799a5077fd2038a917549a1d1e3665d5a1919c955858d698a vc_render_tifxyz --volume /data/raw/remote-volume --remote-url https://vesuvius-challenge-open-data.s3.amazonaws.com/PHerc0139/volumes/20260102150214-2.399um-0.2m-78keV-masked.zarr --segmentation /data/segments/PHerc0139/20260127000000 --scale 1 --group-idx 0 --num-slices 21 --slice-step 1 --cache-gb 4 --tif-output /data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers --crop-x 18528 --crop-y 14248 --crop-width 1024 --crop-height 1024",
+    "dtype": "uint8",
+    "exit_code": 0,
+    "layers": [
+      {
+        "dtype": "uint8",
+        "file": "00.tif",
+        "file_sha256": "b0f0692543d4349350fc7567c31c0dbb698ec941bc12bedf6fa14a7cb8cfefae",
+        "gradient_energy": 26.453118324279785,
+        "mean": 65.07878494262695,
+        "p01": 22.0,
+        "p99": 170.0,
+        "pixel_sha256": "f1d89cd8f82b7b4a27948a7c6014c5a4d6c50096587b815c5cefde1e41e83470",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 44.894188239059616,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "01.tif",
+        "file_sha256": "2a607d5edd2c2f4b7342dfce27e4a0e4197a7ccf3e2627320cff21080596a325",
+        "gradient_energy": 29.37684655189514,
+        "mean": 72.75932216644287,
+        "p01": 23.0,
+        "p99": 172.0,
+        "pixel_sha256": "c9078fd68090bd67783e82430cde36fd5eebe0e092f198704ef50e67d780a1c1",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 47.60749478535905,
+        "zero_fraction": 3.814697265625e-06
+      },
+      {
+        "dtype": "uint8",
+        "file": "02.tif",
+        "file_sha256": "2f517634700a323e6325ab5f438a1725d5d26dabca986703b042fda39bc89161",
+        "gradient_energy": 32.85087871551514,
+        "mean": 80.94665908813477,
+        "p01": 23.0,
+        "p99": 174.0,
+        "pixel_sha256": "2df75ff2c05af1d7c051b9dd1ae3f252e460b3e6563ad5ed65caadc7e7364bec",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 49.51996197073642,
+        "zero_fraction": 9.5367431640625e-07
+      },
+      {
+        "dtype": "uint8",
+        "file": "03.tif",
+        "file_sha256": "efc28761cec6a74292aad14535ede47b0998e1e1e8750031a3a7d5b19722983a",
+        "gradient_energy": 36.301958084106445,
+        "mean": 89.01107120513916,
+        "p01": 23.0,
+        "p99": 174.0,
+        "pixel_sha256": "be1f90258e9ff965fe5dc2a3b68e4dd051d4dd79ade56d054e0d9e8c3952e1ab",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 50.30508567698095,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "04.tif",
+        "file_sha256": "5841dd1444d65c8e59c68275e90a0c749fda9ed92955b881caf99638e22efd42",
+        "gradient_energy": 39.346649169921875,
+        "mean": 96.41786193847656,
+        "p01": 23.0,
+        "p99": 174.0,
+        "pixel_sha256": "478ee0e8fa88d373a73724f1d59432602801ef37a3a599f41135dba4cd45e862",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 49.961165506714195,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "05.tif",
+        "file_sha256": "b8b0d992b2bd623c7bdd9922528d23ac2f51de81a04695e8a8ec7d253a34e218",
+        "gradient_energy": 42.08786106109619,
+        "mean": 102.81740665435791,
+        "p01": 24.0,
+        "p99": 175.0,
+        "pixel_sha256": "58eacd06d16158b6cbae684cb4afe274b4b22bd9eeb2e8873045792c87adbac7",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 48.613955080618,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "06.tif",
+        "file_sha256": "69ae4405d8346142d797d7957ec01859f00894a32f26429aceb24d590dac822c",
+        "gradient_energy": 44.97274923324585,
+        "mean": 108.15130424499512,
+        "p01": 24.0,
+        "p99": 175.0,
+        "pixel_sha256": "e838e197b3a53fa95fcb9ed3eb58731d2f4737a0b415eb6ffe72f0ee35e18e99",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 46.40914072584264,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "07.tif",
+        "file_sha256": "b8c6c42ec769f878aae3c97602babe488b044dee0446d33887221f66dea93580",
+        "gradient_energy": 47.94054937362671,
+        "mean": 112.56665325164795,
+        "p01": 25.0,
+        "p99": 176.0,
+        "pixel_sha256": "98d029952ed762fb5197825bdc15a48fbaa628a131553ab11bb621612a0b6368",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 43.646994257838934,
+        "zero_fraction": 9.5367431640625e-07
+      },
+      {
+        "dtype": "uint8",
+        "file": "08.tif",
+        "file_sha256": "06027054ccb36249026255e777fe03b757d13aac63ded4fb75615bddec7d94c4",
+        "gradient_energy": 50.20546579360962,
+        "mean": 116.15408992767334,
+        "p01": 25.0,
+        "p99": 176.0,
+        "pixel_sha256": "0aeda126da15c1af22a0eed08e0b30317db5c640d9cf675ca856f34a30abfee8",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 40.805804159538724,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "09.tif",
+        "file_sha256": "eaf3ac1b8a5bece310bec8e1090fc5f6aff52aab367921fa8721cbe5ed904a01",
+        "gradient_energy": 51.309858322143555,
+        "mean": 118.75847339630127,
+        "p01": 27.0,
+        "p99": 176.0,
+        "pixel_sha256": "94b1911ba95ba2ce7b373b1d0c68e19d807a5da818d003d7525bdd542921d6c4",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 38.47830644512403,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "10.tif",
+        "file_sha256": "6cf3ef978ca4b7c50c70c8b381c79df7e2d82297fca6acc0cf5157913fe7a826",
+        "gradient_energy": 51.52174735069275,
+        "mean": 120.08989238739014,
+        "p01": 28.0,
+        "p99": 177.0,
+        "pixel_sha256": "436b839dd109dfa1a62f8f9a00a7ab4077e05a601c6c8bdb9c8496f7ffb15da4",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 37.165583251907314,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "11.tif",
+        "file_sha256": "ca671ce5550bd4dc86ca28e747515d3e38992f63acc433e6b59fcaece537b323",
+        "gradient_energy": 51.18645453453064,
+        "mean": 120.04244899749756,
+        "p01": 29.0,
+        "p99": 176.0,
+        "pixel_sha256": "0e70f3beec17ab224a630e3be7fdbc82f359ee3d50a40aaff19a72b5834718b8",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 37.01551451760575,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "12.tif",
+        "file_sha256": "94c9d3b6951ff8b810eb929077a91ff91ea4cee46671d43f583361a08dd847eb",
+        "gradient_energy": 50.51540422439575,
+        "mean": 118.77156829833984,
+        "p01": 28.0,
+        "p99": 176.0,
+        "pixel_sha256": "f85a8d58c9e436ef3ec030863067fa99ee421a13aecb4ac46c62268d1a6d7a77",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 37.90693549724472,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "13.tif",
+        "file_sha256": "6d3e54a6740c89cd0ceedffb6e10bd2645783c4bbcdfcbac923c490ce8d46db1",
+        "gradient_energy": 49.90536141395569,
+        "mean": 116.51566791534424,
+        "p01": 27.0,
+        "p99": 176.0,
+        "pixel_sha256": "9d78d2c1b0c6ff0ad9dc73f538c69137701e5a0f6b583a07b70edc6a67419575",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 39.524068170572015,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "14.tif",
+        "file_sha256": "0103ca6b4f6035d66bef0174d2b55326003de267e51b076588f71309502d5d50",
+        "gradient_energy": 49.66745138168335,
+        "mean": 113.53926277160645,
+        "p01": 25.0,
+        "p99": 176.0,
+        "pixel_sha256": "c9320f87b5b09253b2fb8f68e58302768d343118e6d5b8e1e9350aef7d28de94",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 41.489934017063796,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "15.tif",
+        "file_sha256": "fc61c56605bcc1559dd58c6b0e9e4418bea8225e0e626d07d690ca1cc7e5a0d7",
+        "gradient_energy": 49.78059649467468,
+        "mean": 110.0136833190918,
+        "p01": 25.0,
+        "p99": 175.0,
+        "pixel_sha256": "ad10d3ce2fa7eff2fb75b540fbc70104edef63c3b2b89b17dff5924e29fbe37e",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 43.48822238770304,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "16.tif",
+        "file_sha256": "fe5b8306c681635781aff955f419d55ee41f01148cef022ec64e48a09d8165a4",
+        "gradient_energy": 49.77422046661377,
+        "mean": 105.96714210510254,
+        "p01": 24.0,
+        "p99": 175.0,
+        "pixel_sha256": "0a4c64774b16b7619c340f84ff5d3e219b70d6af2022c1b4fe1c48c14a94de66",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 45.25281279777751,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "17.tif",
+        "file_sha256": "64733d4d00a62720a7ef34c4046eb31f8d4e9cd326af8b90790a75fbbffd69cb",
+        "gradient_energy": 49.24521207809448,
+        "mean": 101.510666847229,
+        "p01": 23.0,
+        "p99": 174.0,
+        "pixel_sha256": "c19d891c8e7d0af7672cb281303be321f87436ee622498290126b096662a6314",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 46.57859338453918,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "18.tif",
+        "file_sha256": "a04af8e471a64fcc79e64ac8945bb19e0d9fcb27db22d3b3cbcad323dffdff3e",
+        "gradient_energy": 48.091925382614136,
+        "mean": 96.89142894744873,
+        "p01": 22.0,
+        "p99": 173.0,
+        "pixel_sha256": "bba2f56bd70cb16fe43e4abc06b7c5570d20b440c1c67d8cd6b08ed4fd72d79b",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 47.4015505099363,
+        "zero_fraction": 0.0
+      },
+      {
+        "dtype": "uint8",
+        "file": "19.tif",
+        "file_sha256": "4209281b8d3caec6dd5b52e1744bc6933ed1fff856eccd6457427f068c788648",
+        "gradient_energy": 46.621169567108154,
+        "mean": 92.27958011627197,
+        "p01": 21.0,
+        "p99": 172.0,
+        "pixel_sha256": "235267f9305e1a0fc0697f1d80f01d999de1a52064fafc0dd840dfac78a95643",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 47.77824596009254,
+        "zero_fraction": 7.62939453125e-06
+      },
+      {
+        "dtype": "uint8",
+        "file": "20.tif",
+        "file_sha256": "bc3273eec27acab7ca5a0c01e0968ba930d39f482bc6b5fec30932ecea5111ef",
+        "gradient_energy": 45.22933530807495,
+        "mean": 87.6958122253418,
+        "p01": 21.0,
+        "p99": 170.0,
+        "pixel_sha256": "557f43e3e94e7d637480fb8e78a58c1f341d53ec1f2cc54545039ce43fc0229b",
+        "shape": [
+          1024,
+          1024
+        ],
+        "std": 47.875050507866376,
+        "zero_fraction": 2.86102294921875e-06
+      }
+    ],
+    "num_slices": 21,
+    "offsets_voxels": [
+      -10.0,
+      -9.0,
+      -8.0,
+      -7.0,
+      -6.0,
+      -5.0,
+      -4.0,
+      -3.0,
+      -2.0,
+      -1.0,
+      0.0,
+      1.0,
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      6.0,
+      7.0,
+      8.0,
+      9.0,
+      10.0
+    ],
+    "on_surface_layer": 10,
+    "render_seconds": 52.863268689019606,
+    "renderer_log": [
+      "band 1/8 (12%)  0.1 bands/s  0m09s  eta 1m08s",
+      "band 2/8 (25%)  0.1 bands/s  0m14s  eta 0m43s",
+      "band 3/8 (37%)  0.1 bands/s  0m20s  eta 0m33s",
+      "band 4/8 (50%)  0.1 bands/s  0m28s  eta 0m28s",
+      "band 5/8 (62%)  0.1 bands/s  0m36s  eta 0m21s",
+      "band 6/8 (75%)  0.1 bands/s  0m41s  eta 0m13s",
+      "band 7/8 (87%)  0.2 bands/s  0m46s  eta 0m06s",
+      "band 8/8 (100%)  0.2 bands/s  0m51s  eta 0m00s",
+      "Remote zarr streaming: https://vesuvius-challenge-open-data.s3.amazonaws.com/PHerc0139/volumes/20260102150214-2.399um-0.2m-78keV-masked.zarr",
+      "zarr dataset size for group 0 [76953 26511 26511 ]",
+      "Source dtype: uint8",
+      "chunk shape [128 128 128 ]",
+      "Voxel size: 1.0 (no metadata found; override with --voxel-size)",
+      "Rendering: /data/segments/PHerc0139/20260127000000 -> /data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024/layers (tif)",
+      "ds_level=0 ds_scale=1 sA=1 Pg=1 render_scale=1",
+      "rendering 1024x1024 at scale 1 crop [1024\u00d71024 from (18528,14248)]"
+    ],
+    "shape": [
+      1024,
+      1024
+    ],
+    "slice_step": 1.0,
+    "volume_id": "20260102150214",
+    "voxel_um": 2.399
+  },
+  "seed": null,
+  "source_sha256": "18e50c83e016870fc9509cd28024c279237bc5eb2e1f3b4577361a3f8ff85f42",
+  "stage": "render",
+  "started_at": "2026-11-01T05:58:11+00:00",
+  "versions": {
+    "numpy": "2.5.4",
+    "pyarrow": "26.0.0",
+    "python": "3.14.10",
+    "rich": "15.0.0",
+    "scipy": "1.18.1",
+    "tifffile": "2026.10.15",
+    "typer": "0.27.3",
+    "vesuvius": "0.2.4",
+    "zarr": "3.4.2"
+  },
+  "villa_sha": "d57c28ebee8776b618f9851c2289cc407ea99dd4"
+}
