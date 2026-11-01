@@ -148,6 +148,19 @@ def layer_files(output_dir: Path) -> list[Path]:
     return sorted((output_dir / "layers").glob("*.tif"))
 
 
+def prepare_output(output_dir: Path, overwrite: bool) -> None:
+    """Clear old layers, or refuse to run over them.
+
+    `vc_render_tifxyz` exits successfully without rendering when all its output files
+    exist, so a run over old layers would record their hashes as a fresh result.
+    """
+    existing = layer_files(output_dir)
+    if existing and not overwrite:
+        raise FileExistsError(f"{output_dir} already holds {len(existing)} layers; pass --overwrite to render again")
+    for path in existing:
+        path.unlink()
+
+
 def layer_statistics(path: Path) -> dict[str, Any]:
     """Descriptive texture statistics for one layer. They hold no image content."""
     image = tifffile.imread(path)

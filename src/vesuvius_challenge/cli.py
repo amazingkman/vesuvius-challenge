@@ -230,6 +230,7 @@ def render(
     group_idx: Annotated[int, typer.Option(min=0, help="OME-Zarr pyramid level.")] = 0,
     cache_gb: Annotated[int, typer.Option(min=1, help="Renderer chunk cache in GB.")] = 4,
     root: Annotated[Path, typer.Option(help="Data root, mounted at /data in the container.")] = DATA_ROOT,
+    overwrite: Annotated[bool, typer.Option(help="Delete existing layers and render again.")] = False,
     dry_run: Annotated[bool, typer.Option(help="Print the command and stop.")] = False,
 ) -> None:
     """Render a surface volume with VC3D's vc_render_tifxyz in Podman, with explicit layer flags."""
@@ -260,6 +261,11 @@ def render(
     if dry_run:
         ui.console.print(rendering.shell_command(command), soft_wrap=True, highlight=False, markup=False)
         return
+
+    try:
+        rendering.prepare_output(output_dir, overwrite)
+    except FileExistsError as error:
+        raise typer.BadParameter(str(error)) from error
 
     ui.banner(
         "vch render",

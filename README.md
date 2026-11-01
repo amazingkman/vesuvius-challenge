@@ -84,7 +84,7 @@ uv run vch render data/segments/PHerc0139/20260127000000 \
 uv run vch verify-io data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024
 ```
 
-- **Output:** `data/renders/<sample>/<segment>/<settings>/layers/NN.tif`, plus `render.run.json` holding the full command, image digest, flags, on-surface layer and a pixel hash for each layer.
+- **Output:** `data/renders/<sample>/<segment>/<settings>/layers/NN.tif`, plus `render.run.json` holding the full command, image digest, flags, on-surface layer and a pixel hash for each layer. `vch render` stops if the layers already exist, because `vc_render_tifxyz` then exits successfully without rendering; `--overwrite` renders again.
 - **On-surface layer:** layer `k` sits at `(k - (N-1)/2) * step` voxels, so `k0 = (N-1)/2` for odd `N` (21 layers: `k0 = 10`). **An even `N` has no on-surface layer.** Layer numbers are in our own renders; published surface volumes use other conventions.
 - **Direction:** with this image, rising layer number moves along the *negative* `vesuvius` normal (measured, see `reports/2026-11-wo001/upstream-audit.md`).
 - **Crop:** `x,y,width,height` in output pixels. At `--scale 1 --group-idx 0`, one pixel is one level-0 voxel and the surface measures `grid size / meta.json scale`.

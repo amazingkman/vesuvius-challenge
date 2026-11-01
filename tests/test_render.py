@@ -108,6 +108,23 @@ def test_layer_statistics_are_true_and_hash_pixels(tmp_path: Path) -> None:
     assert render.layer_statistics(other)["file_sha256"] != stats["file_sha256"]
 
 
+def test_existing_layers_stop_a_render_unless_overwritten(tmp_path: Path) -> None:
+    layers = tmp_path / "layers"
+    layers.mkdir()
+    (layers / "00.tif").write_bytes(b"old")
+    (layers / "notes.txt").write_bytes(b"keep")
+    with pytest.raises(FileExistsError, match="--overwrite"):
+        render.prepare_output(tmp_path, overwrite=False)
+    assert (layers / "00.tif").exists()
+    render.prepare_output(tmp_path, overwrite=True)
+    assert not (layers / "00.tif").exists()
+    assert (layers / "notes.txt").exists()
+
+
+def test_empty_output_needs_no_overwrite(tmp_path: Path) -> None:
+    render.prepare_output(tmp_path, overwrite=False)
+
+
 def textured_stack() -> tuple[np.ndarray, np.ndarray, np.ndarray, list[np.ndarray]]:
     """A random volume, a flat surface through it, and that surface's own 'rendered' layers."""
     rng = np.random.default_rng(7)
