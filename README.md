@@ -10,9 +10,25 @@ Current focus: a **label-free diagnostic for segmentation surfaces**. It measure
 - **Analytic tools only count if they lead to improvements.** The prize page says analytic tools must "show how they facilitated improvements… for example by detecting failure-cases of existing methods on real scroll data." [T1: scrollprize.org/prizes, accessed 2026-10-31]
 - **Moving a surface along its normal using render data already exists.** segmata, `vc_objrefine`, recto-offset, `snap_labels` and Lasagna's local-correction mode all do this. Our contribution is a new *error signal* with known physics and a documented failure envelope, designed to plug into those tools. See `docs/decisions.md` DR-002 and `docs/method-lpsf.md`.
 
-## Method in one paragraph (Layer Phase-Shift Field, LPSF)
+## Method (Layer Phase-Shift Field, LPSF)
 
-Render a segment's surface volume (layers stepped along the mesh normal). For each patch and each pair of adjacent layers, estimate the sub-pixel in-plane translation with Fourier phase correlation [Foroosh et al. 2002; Guizar-Sicairos et al. 2008]. If the mesh is tilted by angle θ relative to the true papyrus sheet, texture that persists through the sheet's thickness slides by Δd·sin θ per layer step Δd. A correctly oriented mesh shows no slide, and a constant offset also shows none. The shift field therefore measures the **gradient of the normal-offset error**. Integrating it (Frankot–Chellappa) recovers the offset up to a constant, and the per-patch depth profile of correlation and intensity pins that constant. The derivation, assumptions and falsification tests are in `docs/method-lpsf.md`. Until WO-002 confirms it on synthetic sheets, the derivation is a hypothesis.
+Theory, assumptions, predictions and failure modes: [`docs/method-lpsf.md`](docs/method-lpsf.md) (rev. 2026-11-01, DR-009). In one paragraph: render a segment's surface volume (layers stepped along the mesh normal). If the mesh is tilted by θ against the papyrus sheet, texture that persists through the sheet's thickness slides by Δd·tan θ between adjacent layers; a correct orientation and a constant offset both show no slide. With the mesh metric g, the per-patch slide gives the covariant gradient of the normal offset h, ∂ᵢh = gᵢⱼ sʲ/Δd. A screened weighted least-squares solve integrates it to ĥ, pinned by z*, the sheet position from the depth profile. The consistency residual ∇z* − g flags sheet jumps.
+
+**Implementation (WO-002, synthetic calibration only):**
+
+- `vesuvius_challenge.lpsf`: the estimator. In-plane band-pass; prior-weighted non-circular depth window; two shift estimators, generalised phase correlation (`pc`, default) and multi-layer symmetric Lucas–Kanade (`lk`); Σ from a cross structure tensor; metric correction; screened integration (Frankot–Chellappa as a reference); consistency residual; curl. The frozen defaults are `lpsf.Params()`.
+- `vesuvius_challenge.synthetic`: 3-D papyrus-like sheets with known truth. Textures are A1, two-layer recto/verso, or realistic (through-thickness r fitted to WO-001's 0.93 / 0.78 / 0.60). Mesh variants are graph-displaced, isometric tilted or stretched; a second sheet can be added; noise is Gaussian or Poisson. The reference trilinear renderer is for tests only; real renders use `vc_render_tifxyz`.
+- `vesuvius_challenge.crlb`: the Cramér–Rao bound for each synthetic configuration, per pair and per multi-layer stack.
+- `vesuvius_challenge.experiments` with `vch synth run` / `vch synth report`: parameter sweeps (`configs/synth/wo002.toml`) to Parquet plus a JSON run record, and figures and verdicts built from saved runs only.
+
+```bash
+uv run vch selftest                                         # fast paths vs skimage, villa, analytic references
+uv run vch synth run --config configs/synth/wo002.toml      # ~1,200 synthetic cases, CPU only
+uv run vch synth run --config configs/synth/wo002-fibre.toml  # fibre orientation vs tilt, 252 cases
+uv run vch synth report runs/synth/wo002-<timestamp> [runs/synth/wo002-fibre-<timestamp>]  # figures + summary.md
+```
+
+Results, the failure envelope and the frozen defaults are in [`reports/2026-11-wo002/report.md`](reports/2026-11-wo002/report.md). Nothing here has touched real scroll data yet; that is WO-003.
 
 ## Built on (we use these tools rather than re-implementing them)
 
@@ -52,7 +68,7 @@ Python 3.14 is required because villa `main`'s `vesuvius` package declares `requ
 
 ```bash
 uv sync                      # resolves the pinned villa commit from uv.lock
-uv run vch --help            # stages: survey, fetch, render, verify-io, selftest
+uv run vch --help            # stages: survey, fetch, render, verify-io, selftest, synth
 uv run vch selftest          # fast paths against slow references; synthetic data only
 podman pull ghcr.io/scrollprize/villa/volume-cartographer:edge   # renderer, needed from WO-001 on
 ```
@@ -97,4 +113,4 @@ Scroll data is never committed or redistributed. Scrolls 1–4 and Fragments 1�
 
 ## Status
 
-See `CHANGELOG.md` and `planning/`. As of 2026-11-01: WO-001 is complete and reviewed (DR-008). WO-002 (with addendum), WO-003 rev 2 and WO-004 are issued. Study data is PHerc0139; Paris 4 is excluded until 2027-06-25.
+See `CHANGELOG.md` and `planning/`. As of 2026-11-01: WO-001 is complete and reviewed (DR-008). WO-002 (with addenda 1 and 2) is implemented, with its report in `reports/2026-11-wo002/report.md`; it awaits Planner review. The pre-registered P1/P2 slope criterion failed for a geometric reason, and realistic-decorrelation mode exposed an orientation-dependent bias that matters for WO-003. WO-003 rev 3 and WO-004 are issued. Study data is PHerc0139; Paris 4 is excluded until 2027-06-25.

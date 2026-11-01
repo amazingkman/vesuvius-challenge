@@ -1,0 +1,83 @@
+{
+  "finished_at": "2026-11-01T20:05:31+00:00",
+  "image_digest": null,
+  "outputs": [
+    "runs/synth/wo002-fibre-20261101T195301/cases.parquet",
+    "runs/synth/wo002-fibre-20261101T195301/details-tilt.parquet"
+  ],
+  "params": {
+    "config": {
+      "name": "wo002-fibre",
+      "seed": 2027,
+      "sweep": [
+        {
+          "estimator": [
+            "pc",
+            "lk"
+          ],
+          "experiment": "tilt",
+          "fibre_deg": [
+            23.7,
+            38.7,
+            53.7,
+            68.7,
+            83.7,
+            98.7,
+            113.7
+          ],
+          "length": 1056,
+          "seeds": 2,
+          "snr": 6,
+          "texture": [
+            "a1",
+            "realistic",
+            "two_layer"
+          ],
+          "theta_deg": [
+            2,
+            5,
+            10
+          ]
+        }
+      ]
+    },
+    "config_path": "configs/synth/wo002-fibre.toml",
+    "n_cases": 252,
+    "only": null,
+    "workers": 3
+  },
+  "partial": false,
+  "repo_commit": "c515358bf39c5f95fc098220c00d544c216e9628",
+  "reproduce": "uv run vch synth run --config configs/synth/wo002-fibre.toml --out runs/synth --workers 3",
+  "results": {
+    "cases_done": 252,
+    "cases_planned": 252,
+    "compute": {
+      "cpus": 4,
+      "gpu": null,
+      "workers": 3
+    },
+    "cpu_seconds_in_cases": 2247.3226540199885,
+    "errors": 0,
+    "per_experiment": {
+      "tilt": 252
+    },
+    "wall_seconds": 750.2630964700002
+  },
+  "seed": 2027,
+  "source_sha256": "9bdc19a6204a7d3d49e82e588ddb12bbeae906e2350f51bb87e356b7b36052fd",
+  "stage": "synth-run",
+  "started_at": "2026-11-01T19:53:01+00:00",
+  "versions": {
+    "numpy": "2.5.4",
+    "pyarrow": "26.0.0",
+    "python": "3.14.6",
+    "rich": "15.0.0",
+    "scipy": "1.18.1",
+    "tifffile": "2026.10.15",
+    "typer": "0.27.3",
+    "vesuvius": "0.2.4",
+    "zarr": "3.4.2"
+  },
+  "villa_sha": "d57c28ebee8776b618f9851c2289cc407ea99dd4"
+}

@@ -1,0 +1,90 @@
+{
+  "verdicts": {
+    "P1/P2 slope, A1, SNR 6, lk": {
+      "verdict": "FAIL",
+      "detail": "slopes by \u0394d: 0.5: 0.291, 1: 0.084, 2: 0.363 (need 1 \u00b1 0.05)"
+    },
+    "P1/P2 slope, A1, SNR 6, pc": {
+      "verdict": "FAIL",
+      "detail": "slopes by \u0394d: 0.5: 0.592, 1: 0.098, 2: 0.528 (need 1 \u00b1 0.05)"
+    },
+    "A1 slope at \u03b8 = 20\u00b0, P = 64 (SNR 6)": {
+      "verdict": "FAIL",
+      "detail": "ratio lk: 0.035, pc: 0.168; patch depth span P\u00b7tan 20\u00b0 = 23.3 voxels vs sheet thickness 20"
+    },
+    "A1 slope at \u03b8 = 20\u00b0, P = 32 (SNR 6)": {
+      "verdict": "FAIL",
+      "detail": "ratio lk: -0.875, pc: -0.489; patch depth span P\u00b7tan 20\u00b0 = 11.6 voxels vs sheet thickness 20"
+    },
+    "Sigma calibrated, a1, lk": {
+      "verdict": "FAIL",
+      "detail": "coverage 0.642 (need 0.90-0.98), confident wrong sign 0.116 (need <= 0.025), 5840 patches"
+    },
+    "Sigma calibrated, a1, pc": {
+      "verdict": "FAIL",
+      "detail": "coverage 0.610 (need 0.90-0.98), confident wrong sign 0.081 (need <= 0.025), 6032 patches"
+    },
+    "Sigma calibrated, realistic, lk": {
+      "verdict": "FAIL",
+      "detail": "coverage 0.165 (need 0.90-0.98), confident wrong sign 0.489 (need <= 0.025), 5455 patches"
+    },
+    "Sigma calibrated, realistic, pc": {
+      "verdict": "FAIL",
+      "detail": "coverage 0.138 (need 0.90-0.98), confident wrong sign 0.482 (need <= 0.025), 5648 patches"
+    },
+    "Sigma calibrated, two_layer, lk": {
+      "verdict": "FAIL",
+      "detail": "coverage 0.578 (need 0.90-0.98), confident wrong sign 0.001 (need <= 0.025), 2640 patches"
+    },
+    "Sigma calibrated, two_layer, pc": {
+      "verdict": "FAIL",
+      "detail": "coverage 0.432 (need 0.90-0.98), confident wrong sign 0.010 (need <= 0.025), 2640 patches"
+    },
+    "pure offset |s| < 0.05 px, a1": {
+      "verdict": "PASS",
+      "detail": "max per-patch |s| over offsets -10..10: 0.0058 px"
+    },
+    "pure offset |s| < 0.05 px, realistic": {
+      "verdict": "FAIL",
+      "detail": "max per-patch |s| over offsets -10..10: 0.2771 px"
+    },
+    "offset recovery RMSE <= 0.5, a1, lk": {
+      "verdict": "PASS",
+      "detail": "worst RMSE 0.049 voxels (amp >= 2, width >= 4 patches)"
+    },
+    "offset recovery RMSE <= 0.5, realistic, lk": {
+      "verdict": "FAIL",
+      "detail": "worst RMSE 1.865 voxels (amp >= 2, width >= 4 patches)"
+    },
+    "offset recovery RMSE <= 0.5, a1, pc": {
+      "verdict": "PASS",
+      "detail": "worst RMSE 0.061 voxels (amp >= 2, width >= 4 patches)"
+    },
+    "offset recovery RMSE <= 0.5, realistic, pc": {
+      "verdict": "FAIL",
+      "detail": "worst RMSE 1.994 voxels (amp >= 2, width >= 4 patches)"
+    },
+    "P4 ||r|| AUROC >= 0.9, a1, lk": {
+      "verdict": "PASS",
+      "detail": "lowest AUROC at amp >= 3: 1.000"
+    },
+    "P4 ||r|| AUROC >= 0.9, realistic, lk": {
+      "verdict": "FAIL",
+      "detail": "lowest AUROC at amp >= 3: 0.534"
+    },
+    "P4 ||r|| AUROC >= 0.9, a1, pc": {
+      "verdict": "PASS",
+      "detail": "lowest AUROC at amp >= 3: 1.000"
+    },
+    "P4 ||r|| AUROC >= 0.9, realistic, pc": {
+      "verdict": "FAIL",
+      "detail": "lowest AUROC at amp >= 3: 0.620"
+    }
+  },
+  "estimator_choice": {
+    "pc_mean_eff_realistic": 17.312947402412753,
+    "lk_mean_eff_realistic": 11.723011400650465,
+    "chosen": "pc",
+    "rule": "lk only if its mean efficiency over realistic configurations exceeds pc's by >10%; ties to pc"
+  }
+}

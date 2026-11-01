@@ -1,0 +1,18 @@
+# WO-002 follow-up sweep (requested 2026-11-01 after the realistic-mode sign reversal): fibre orientation
+# relative to the tilt direction, 0 to 90 degrees, every texture mode, both estimators. Reports bias and Sigma
+# coverage against orientation.
+# fibre_deg is in volume coordinates; synthetic meshes are rotated by 23.7 degrees (GENERIC_ROTATION_DEG), so
+# fibre_deg = 23.7 + (angle between fibres and the tilt direction in the mesh frame).
+# Run: uv run vch synth run --config configs/synth/wo002-fibre.toml
+name = "wo002-fibre"
+seed = 2027
+
+[[sweep]]
+experiment = "tilt"
+estimator = ["pc", "lk"]
+texture = ["a1", "realistic", "two_layer"]
+fibre_deg = [23.7, 38.7, 53.7, 68.7, 83.7, 98.7, 113.7]
+theta_deg = [2, 5, 10]
+snr = 6
+length = 1056
+seeds = 2

@@ -1,0 +1,415 @@
+{
+  "finished_at": "2026-11-01T19:53:00+00:00",
+  "image_digest": null,
+  "outputs": [
+    "runs/synth/wo002-20261101T191224/cases.parquet",
+    "runs/synth/wo002-20261101T191224/details-crosscheck.parquet",
+    "runs/synth/wo002-20261101T191224/details-layers.parquet",
+    "runs/synth/wo002-20261101T191224/details-step.parquet",
+    "runs/synth/wo002-20261101T191224/details-tilt.parquet"
+  ],
+  "params": {
+    "config": {
+      "name": "wo002",
+      "seed": 2026,
+      "sweep": [
+        {
+          "estimator": [
+            "pc",
+            "lk"
+          ],
+          "experiment": "tilt",
+          "slice_step": [
+            0.5,
+            1,
+            2
+          ],
+          "snr": [
+            2,
+            6,
+            20
+          ],
+          "texture": [
+            "a1",
+            "realistic",
+            "two_layer"
+          ],
+          "theta_deg": [
+            0,
+            0.5,
+            1,
+            2,
+            3,
+            5,
+            10,
+            20,
+            30
+          ]
+        },
+        {
+          "estimator": [
+            "pc",
+            "lk"
+          ],
+          "experiment": "tilt",
+          "length": 1056,
+          "max_pairs": [
+            1,
+            99
+          ],
+          "seeds": 3,
+          "snr": 6,
+          "texture": [
+            "a1",
+            "realistic"
+          ],
+          "theta_deg": [
+            0,
+            0.5,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "estimator": [
+            "pc",
+            "lk"
+          ],
+          "experiment": "tilt",
+          "snr": [
+            1,
+            2,
+            4,
+            6,
+            12,
+            24
+          ],
+          "spread_deg": [
+            0,
+            10,
+            25,
+            "iso"
+          ],
+          "texture": [
+            "a1",
+            "realistic"
+          ],
+          "theta_deg": [
+            2,
+            5,
+            10
+          ]
+        },
+        {
+          "estimator": [
+            "pc",
+            "lk"
+          ],
+          "experiment": "tilt",
+          "snr": 6,
+          "theta_deg": [
+            5,
+            10,
+            20
+          ],
+          "thickness": [
+            8,
+            12,
+            20,
+            40
+          ]
+        },
+        {
+          "bp_coarse": 0.0,
+          "bp_fine": 0.0,
+          "estimator": [
+            "pc",
+            "lk"
+          ],
+          "experiment": "tilt",
+          "normalize": false,
+          "snr": 6,
+          "theta_deg": [
+            5,
+            10,
+            20
+          ],
+          "thickness": [
+            8,
+            12,
+            20,
+            40
+          ],
+          "variant": "unfiltered"
+        },
+        {
+          "estimator": [
+            "pc",
+            "lk"
+          ],
+          "experiment": "tilt",
+          "length": 1056,
+          "patch": [
+            32,
+            48,
+            64,
+            96,
+            128
+          ],
+          "snr": 6,
+          "texture": [
+            "a1",
+            "realistic"
+          ],
+          "theta_deg": [
+            0,
+            2,
+            10,
+            20
+          ]
+        },
+        {
+          "amplitude": 4,
+          "estimator": [
+            "pc",
+            "lk"
+          ],
+          "experiment": "bump",
+          "fwhm_px": 256,
+          "patch": [
+            32,
+            48,
+            64,
+            96
+          ],
+          "size": 768,
+          "snr": 6
+        },
+        {
+          "amplitude": 4,
+          "estimator": "pc",
+          "experiment": "bump",
+          "fwhm_px": 256,
+          "overlap": [
+            0.25,
+            0.5,
+            0.75
+          ],
+          "patch": 64,
+          "size": 768,
+          "snr": 6
+        },
+        {
+          "beta": [
+            0,
+            0.5,
+            1
+          ],
+          "estimator": "pc",
+          "experiment": "tilt",
+          "refine": [
+            0,
+            1
+          ],
+          "snr": 6,
+          "texture": [
+            "a1",
+            "realistic"
+          ],
+          "theta_deg": [
+            2,
+            10
+          ]
+        },
+        {
+          "amplitude": [
+            1,
+            2,
+            4,
+            8
+          ],
+          "estimator": [
+            "pc",
+            "lk"
+          ],
+          "experiment": "bump",
+          "fwhm_patches": [
+            2,
+            3,
+            4
+          ],
+          "snr": 6,
+          "texture": [
+            "a1",
+            "realistic"
+          ]
+        },
+        {
+          "experiment": "offset",
+          "offset": [
+            -10,
+            -6,
+            -3,
+            0,
+            3,
+            6,
+            10
+          ],
+          "snr": 6,
+          "texture": [
+            "a1",
+            "realistic"
+          ]
+        },
+        {
+          "amplitude": [
+            0,
+            1,
+            2,
+            3,
+            5,
+            8
+          ],
+          "estimator": [
+            "pc",
+            "lk"
+          ],
+          "experiment": "step",
+          "seeds": 2,
+          "snr": 6,
+          "texture": [
+            "a1",
+            "realistic"
+          ]
+        },
+        {
+          "amplitude": 2,
+          "experiment": "sinusoid",
+          "snr": 6,
+          "wavelength_px": [
+            96,
+            128,
+            192,
+            256
+          ]
+        },
+        {
+          "eps": [
+            0,
+            0.05,
+            0.1,
+            0.2
+          ],
+          "estimator": [
+            "pc",
+            "lk"
+          ],
+          "experiment": "stretch",
+          "snr": 6
+        },
+        {
+          "experiment": "layers",
+          "gap": [
+            0,
+            4,
+            8,
+            27
+          ],
+          "snr": 6,
+          "texture": [
+            "a1",
+            "realistic"
+          ],
+          "thickness": 20
+        },
+        {
+          "experiment": "layers",
+          "gap": 0,
+          "snr": 6,
+          "texture": [
+            "a1",
+            "realistic"
+          ],
+          "thickness": 47
+        },
+        {
+          "aggregate": [
+            "rho",
+            "information"
+          ],
+          "estimator": [
+            "pc",
+            "lk"
+          ],
+          "experiment": "aperture",
+          "snr": 6,
+          "spread_deg": 0,
+          "texture": [
+            "a1",
+            "two_layer"
+          ],
+          "window_fraction": [
+            0.9,
+            0.7
+          ]
+        },
+        {
+          "experiment": "crosscheck",
+          "n": 50,
+          "noise": [
+            0.0,
+            0.05,
+            0.2
+          ]
+        }
+      ]
+    },
+    "config_path": "configs/synth/wo002.toml",
+    "n_cases": 1208,
+    "only": null,
+    "workers": 3
+  },
+  "partial": false,
+  "repo_commit": "9eb802a79fc187d1b1e7caa5e879d434c0c1728a",
+  "reproduce": "uv run vch synth run --config configs/synth/wo002.toml --out runs/synth --workers 3",
+  "results": {
+    "cases_done": 1208,
+    "cases_planned": 1208,
+    "compute": {
+      "cpus": 4,
+      "gpu": null,
+      "workers": 3
+    },
+    "cpu_seconds_in_cases": 7299.428690568993,
+    "errors": 0,
+    "per_experiment": {
+      "aperture": 16,
+      "bump": 59,
+      "crosscheck": 3,
+      "layers": 10,
+      "offset": 14,
+      "sinusoid": 4,
+      "step": 48,
+      "stretch": 8,
+      "tilt": 1046
+    },
+    "wall_seconds": 2435.9624997600004
+  },
+  "seed": 2026,
+  "source_sha256": "9bdc19a6204a7d3d49e82e588ddb12bbeae906e2350f51bb87e356b7b36052fd",
+  "stage": "synth-run",
+  "started_at": "2026-11-01T19:12:24+00:00",
+  "versions": {
+    "numpy": "2.5.4",
+    "pyarrow": "26.0.0",
+    "python": "3.14.6",
+    "rich": "15.0.0",
+    "scipy": "1.18.1",
+    "tifffile": "2026.10.15",
+    "typer": "0.27.3",
+    "vesuvius": "0.2.4",
+    "zarr": "3.4.2"
+  },
+  "villa_sha": "d57c28ebee8776b618f9851c2289cc407ea99dd4"
+}

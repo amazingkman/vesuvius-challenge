@@ -105,3 +105,58 @@ If work is in progress, fold these in, and say in the provenance log which alrea
 ## 6. Provenance log (executor appends below)
 
 ---
+
+### 2026-11-01 — Cloud (WO-002 with addenda 1 and 2)
+
+**Branch.** Work is on `claude/great-gates-licedm`, the branch this Cloud session was assigned, not `wo-002-…` as `docs/workflow.md` asks. The session instructions forbid pushing elsewhere without permission; Kevin can rename it when opening the PR.
+
+**Pins.** villa `d57c28ebee8776b618f9851c2289cc407ea99dd4` (from `uv.lock`, confirmed by `tests/test_cli.py::test_installed_vesuvius_is_the_pinned_commit`). No Podman image was used (Cloud; out of scope). No scroll data was read: every volume is synthetic, generated in-process from a seed. Python 3.14.6, numpy 2.5.4, scipy 1.18.1, scikit-image 0.26.0.
+
+**Commands.**
+```
+uv sync
+uv run ruff check && uv run ruff format --check
+uv run pytest -q                                        # 126 passed
+uv run vch selftest
+uv run vch synth run --config configs/synth/wo002.toml --out runs/synth --workers 3        # -> wo002-20261101T191224
+uv run vch synth run --config configs/synth/wo002-fibre.toml --out runs/synth --workers 3  # -> wo002-fibre-20261101T195301
+uv run vch synth report reports/2026-11-wo002/sweeps/wo002-20261101T191224 reports/2026-11-wo002/sweeps/wo002-fibre-20261101T195301 --out reports/2026-11-wo002/generated
+uv run python scripts/wo002_diagnose_realistic.py
+uv run python scripts/wo002_diagnose_overshoot.py
+uv run vch selftest                                     # 13 / 13 pass
+```
+Compute: one cloud container, 4 vCPU, 15 GB RAM, no GPU. Reported runs: 40.6 min + 12.5 min of sweep wall time (2.65 CPU-hours in cases) and 16 min of diagnostics; superseded runs ≈ 1.5 h wall, ≈ 4.3 CPU-hours (report §11). Run records: `reports/2026-11-wo002/sweeps/*/run.json`, `generated/report.run.json` and `diagnosis-*.json`. All reported records carry `source_sha256` 9bdc19a6204a, the committed package source. **Data identifiers:** synthetic only; every case's seed is in `cases.parquet` (base seed 2026 for the main sweep, 2027 for the orientation sweep, ×1000 + case index).
+
+**Addendum 2 arrived mid-work (merged from `master` at 9eb802a). Already-built parts that changed:**
+
+1. *Geometry and truth (item 1).* The first harness measured h along the **nominal** normal on a graph-displaced mesh, where |s|/Δd = sin θ exactly in grid pixels, and the estimator converted g → g/√(1−|g|²) and k* → h with a cos θ factor. Replaced:
+   - truth h is the distance along the **rendered** mesh normal (`synthetic.normal_offset`);
+   - ramps use an exactly isometric tilted plane (`synthetic.tilted_points`);
+   - the estimator applies ∂ᵢh = gᵢⱼ sʲ/Δd with g from the mesh (`Field.grad`), and z* = (k* − k₀)Δd with no cos factor.
+   Both conversions were removed. A stretched-mesh mode and its test were added.
+2. *Pre-filtering (item 2).* The first estimator used a local contrast normalisation (Gaussian high-pass σ = 8 px, divided by local amplitude) that I had added after finding the envelope bias myself. It is now an explicit difference-of-Gaussians band-pass (`bp_fine` 1 px, `bp_coarse` 8 px). The amplitude normalisation and a common-support mask are kept as options (on by default; justified in the report). An "unfiltered" switch exists for the item-2 test.
+3. *Estimators (item 3).* Phase correlation was kept (batched, matrix-DFT zoom, one resample-and-recorrelate pass, β-generalised whitening). Multi-layer symmetric Lucas–Kanade and `crlb.py` (pair and multi-layer Fisher information) were added. The phase-correlation Σ changed from the curvature of the windowed correlation peak to a cross structure tensor: the peak curvature contains the window's own curvature, which manufactured information along fibres and hid the aperture problem (found while building item 4).
+4. *Depth window (item 7).* The first rule was a contiguous run of the patch's **mean intensity** above half-maximum (later 0.8). It was replaced by the addendum rule: the peak of E(k) = band-passed variance × ρ times a Gaussian prior on k₀ (σ = 20 layers), a contiguous hull of layers whose smoothed band-passed variance is ≥ 0.9 of the maximum, and a cap of `w_max` = 21 voxels. Pairs are now correlated only inside the window.
+5. *k\* → z\* (item 6).* The centroid of (mean − min) × ρ became the centroid of E(k) over its half-maximum run, capped at 41 voxels.
+6. *Integration (item 5).* The first solver was a Σ-weighted least squares with a small Laplacian and a constant pinned to k*. It is now the screened solve with a z* term and in-mask cells (Neumann). Frankot–Chellappa is a reference only.
+7. *Failure detection (item 6).* P4 previously scored the curl. The consistency residual ‖∇z* − g‖ is now the detector; curl is kept, with a Monte-Carlo null from amplitude-0 step cases.
+8. *Validation (items 8, 9).* Slopes are now signed components regressed against window-averaged truth, never |s|. The window is Hann² for gradients, since both layers of a pair are windowed, and Hann for h. A sinusoid trap test was added. Acceptance follows item 9.
+
+**Surprises (each quantified in the report):**
+- Pure (whitened) phase correlation fails on these renders even without noise: it read 0.002 against a true 0.17 px at θ = 10° on a generically placed mesh. Whitening gives out-of-band frequencies, where fixed voxel-grid interpolation residue and isotropic noise live, the same weight as the texture band, and that residue correlates best at zero shift. The default is β = 0 (windowed cross-correlation with sub-pixel DFT zooming).
+- An axis-aligned synthetic mesh at integer voxel positions makes trilinear pixel-locking coherent across a patch. Synthetic meshes are now placed generically (in-plane rotation of 23.7° and a sub-voxel offset).
+- With slice step ≤ 1, adjacent layers share interpolation voxels. Isotropic CT noise then correlates best at zero in-plane shift, a pull toward zero that grows as SNR falls.
+- The realistic (WO-001-fitted) decorrelation mode biases the slope strongly and can reverse its sign when fibres run near the tilt direction. A 3-D texture that decorrelates through the thickness pulls the match toward smaller depth mismatch, and along the fibres nothing in-plane resists. This bears directly on WO-003.
+- The first full sweep died at 17:54 UTC when a worker was killed (most likely out of memory: four 768-px bump cases at once, peak ~2.7 GB each, while tests also ran), and it lost all results. The runner now retries in a fresh pool, checkpoints every 50 cases and always writes what finished. The volume generator now works in float32 slabs. The sweep was rerun with 3 workers.
+- **Interpolation defect in my own refinement step, found while diagnosing the orientation sweep.** In A1 mode with fibres across the tilt, the gain was +10% (λ = 8 px) and +2.6% (λ = 16 px). It was the same with a cubic renderer, and it disappeared with refinement off (0.994). The cause was the phase error of the Keys cubic-convolution resampler used to align layer k+1 before re-correlating. Both estimators inherit it, because LK converges to the same fixed point. I replaced it with prefiltered cubic B-spline interpolation; the selftest now matches scipy's spline shift to 1e-3, and the gain is 0.996–1.005 at 0° and 90°. The 2–7% small-angle overshoot in the first sweep was the same artefact. **Every sweep and diagnosis was rerun on the fixed code; only the rerun numbers are reported.** The defective run's diagnosis is kept as `diagnosis-overshoot-keys-resampler.json`.
+- **Kevin's mid-work instructions (2026-11-01):** diagnose the realistic-mode sign reversal (filter, estimator, generator drift, Σ); add a Σ-calibration acceptance criterion (95% intervals cover the truth in 90–98% of patches; no confident wrong sign in unobservable directions, operationalised as ≤ 2.5% of patches wrong-signed with |g|/σ > 1.96, the rate a calibrated Gaussian Σ allows); run a fibre-orientation sweep from 0 to 90° (`configs/synth/wo002-fibre.toml`); report P = 64 at 20° as unmet, with P = 32 alongside and a recommended default. Diagnosis scripts: `scripts/wo002_diagnose_realistic.py`, `scripts/wo002_diagnose_overshoot.py`.
+- **Push blocked:** `git push` to `origin` returned HTTP 403 (no GitHub access for this repository from the session). The commits are local on `claude/great-gates-licedm` until access is restored.
+
+**Acceptance criterion added on Kevin's instruction (2026-11-01).** Σ must be calibrated across all modes and orientations: 95% intervals cover the truth in 90–98% of patches, and unobservable directions must not produce a confident wrong sign. The second clause is operationalised as ≤ 2.5% of patches wrong-signed with |g|/σ > 1.96, the rate a calibrated Gaussian Σ allows at small tilts. This is implemented as a verdict in `synth_report.calibration`. **Result: FAIL in every mode** (report §6).
+
+**Outcome summary (details and numbers in `reports/2026-11-wo002/report.md`):**
+- P1/P2 pre-registered slope criterion (θ ≤ 20°, P = 64, A1, SNR 6): **FAIL**. The cause is geometric at 20°: P·tan θ = 23.3 voxels against a 20-voxel sheet with about 6–9 voxels of edge. P = 32 also fails at 20°. Over θ ≤ 10° the slopes are 0.93–1.00, and a 40-voxel sheet gives 0.99 at 20°. Recommended default P = 64.
+- Pure offset (A1) PASS; offset recovery (A1) PASS; P4 ‖r‖ (A1) PASS; the realistic-mode counterparts FAIL.
+- Realistic-mode sign reversal diagnosed: not the envelope trap, present for LK, no generator drift. It is the in-band twin of the envelope trap (depth decorrelation pulls the match toward −Δd/tan θ), with first-order gain ≈ 1 − 2ℓ_t²/L². It is orientation-dependent: reversed for fibre-to-tilt angles ≤ 30°, about right at 75–90°.
+- Estimator: phase correlation by the pre-stated rule; LK has about 1.5× the median efficiency. Flagged for the Planner.
+- Defaults frozen as `lpsf.Params()` (report §9).

@@ -1,0 +1,153 @@
+# WO-002 synthetic sweep (addenda 1 and 2). Run: uv run vch synth run --config configs/synth/wo002.toml
+# Every [[sweep]] block is a Cartesian product over its list-valued keys; `seeds` replicates each case.
+# Defaults not listed come from lpsf.Params, synthetic.Sheet (thickness 20 voxels, contrast 0.3) and
+# synthetic.Texture (wavelength 8 px, fibres at 30 degrees, angular spread 25 degrees).
+# "moderate SNR" = 6: WO-001's r(1) = 0.93 implies SNR >= 3.6 if all decorrelation were noise; 6 is the
+# value at which the realistic texture reproduces r(1, 2, 3) within 0.01 (synthetic.fit_realistic_correlation).
+name = "wo002"
+seed = 2026
+
+# 1. P1/P2 (addendum 2 item 9): signed slope vs window-averaged tan(theta); both estimators; three texture modes.
+[[sweep]]
+experiment = "tilt"
+estimator = ["pc", "lk"]
+texture = ["a1", "realistic", "two_layer"]
+theta_deg = [0, 0.5, 1, 2, 3, 5, 10, 20, 30]
+slice_step = [0.5, 1, 2]
+snr = [2, 6, 20]
+
+# 2. Minimum detectable tilt (addendum 1 item 2): single pair vs the full window, realistic and A1, 4 seeds.
+[[sweep]]
+experiment = "tilt"
+estimator = ["pc", "lk"]
+texture = ["a1", "realistic"]
+theta_deg = [0, 0.5, 1, 2, 3]
+max_pairs = [1, 99]
+snr = 6
+length = 1056
+seeds = 3
+
+# 3. Failure envelope: SNR x anisotropy x tilt.
+[[sweep]]
+experiment = "tilt"
+estimator = ["pc", "lk"]
+texture = ["a1", "realistic"]
+theta_deg = [2, 5, 10]
+snr = [1, 2, 4, 6, 12, 24]
+spread_deg = [0, 10, 25, "iso"]
+
+# 4. Envelope trap (addendum 2 item 2): band-pass on (default) vs off, thin to thick sheets.
+[[sweep]]
+experiment = "tilt"
+estimator = ["pc", "lk"]
+theta_deg = [5, 10, 20]
+thickness = [8, 12, 20, 40]
+snr = 6
+[[sweep]]
+experiment = "tilt"
+estimator = ["pc", "lk"]
+theta_deg = [5, 10, 20]
+thickness = [8, 12, 20, 40]
+snr = 6
+bp_fine = 0.0
+bp_coarse = 0.0
+normalize = false
+variant = "unfiltered"
+
+# 5. Patch size and estimator settings (choice of defaults).
+[[sweep]]
+experiment = "tilt"
+estimator = ["pc", "lk"]
+texture = ["a1", "realistic"]
+theta_deg = [0, 2, 10, 20]
+patch = [32, 48, 64, 96, 128]
+snr = 6
+length = 1056
+[[sweep]]
+experiment = "bump"
+estimator = ["pc", "lk"]
+patch = [32, 48, 64, 96]
+amplitude = 4
+fwhm_px = 256
+size = 768
+snr = 6
+[[sweep]]
+experiment = "bump"
+estimator = "pc"
+patch = 64
+overlap = [0.25, 0.5, 0.75]
+amplitude = 4
+fwhm_px = 256
+size = 768
+snr = 6
+[[sweep]]
+experiment = "tilt"
+estimator = "pc"
+texture = ["a1", "realistic"]
+theta_deg = [2, 10]
+beta = [0, 0.5, 1]
+refine = [0, 1]
+snr = 6
+
+# 6. Offset recovery (bumps), P3 (constant offsets), P4 (steps; amplitude 0 is the null for curl).
+[[sweep]]
+experiment = "bump"
+estimator = ["pc", "lk"]
+texture = ["a1", "realistic"]
+amplitude = [1, 2, 4, 8]
+fwhm_patches = [2, 3, 4]
+snr = 6
+[[sweep]]
+experiment = "offset"
+texture = ["a1", "realistic"]
+offset = [-10, -6, -3, 0, 3, 6, 10]
+snr = 6
+[[sweep]]
+experiment = "step"
+estimator = ["pc", "lk"]
+texture = ["a1", "realistic"]
+amplitude = [0, 1, 2, 3, 5, 8]
+snr = 6
+seeds = 2
+
+# 7. Validation hygiene and geometry: sinusoid trap, metric correction.
+[[sweep]]
+experiment = "sinusoid"
+wavelength_px = [96, 128, 192, 256]
+amplitude = 2
+snr = 6
+[[sweep]]
+experiment = "stretch"
+estimator = ["pc", "lk"]
+eps = [0, 0.05, 0.1, 0.2]
+snr = 6
+
+# 8. P6 and neighbouring wraps (pitch 47 = thickness 20 + gap 27, and touching sheets of thickness 47).
+[[sweep]]
+experiment = "layers"
+texture = ["a1", "realistic"]
+thickness = 20
+gap = [0, 4, 8, 27]
+snr = 6
+[[sweep]]
+experiment = "layers"
+texture = ["a1", "realistic"]
+thickness = 47
+gap = 0
+snr = 6
+
+# 9. P5 and addendum 2 item 4: 1-D fibres, single orientation and recto/verso.
+[[sweep]]
+experiment = "aperture"
+texture = ["a1", "two_layer"]
+spread_deg = 0
+estimator = ["pc", "lk"]
+aggregate = ["rho", "information"]
+window_fraction = [0.9, 0.7]
+snr = 6
+
+# 10. Reference implementations (addendum 1 item 3).
+[[sweep]]
+experiment = "crosscheck"
+noise = [0.0, 0.05, 0.2]
+n = 50

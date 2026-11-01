@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install Python 3.14
+        run: uv python install 3.14
+      - name: Sync (locked)
+        run: uv sync --locked
+      - name: Ruff check
+        run: uv run ruff check
+      - name: Ruff format
+        run: uv run ruff format --check
+      - name: Pytest
+        run: uv run pytest -q
+      - name: Selftest
+        run: uv run vch selftest

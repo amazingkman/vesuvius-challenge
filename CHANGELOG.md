@@ -8,6 +8,21 @@ Each entry says **what** changed, **why**, and **what it builds on** (citation k
 ## [Unreleased]
 
 ### Added
+- 2026-11-01 — WO-002 (with addenda 1 and 2): the LPSF estimator and the synthetic-sheet harness.
+  - `vesuvius_challenge.lpsf`: in-plane band-pass; non-circular depth window (E(k) = band-passed variance × ρ, Gaussian prior on k₀, cap `w_max`); two shift estimators, generalised phase correlation with matrix-DFT zooming and one resample-and-recorrelate pass (default), and multi-layer symmetric Lucas–Kanade; Σ from a cross structure tensor; metric-corrected gradient; screened, anisotropically weighted least-squares integration with z*; Frankot–Chellappa reference; consistency residual ∇z* − g; curl.
+  - `vesuvius_challenge.synthetic`: papyrus-like 3-D sheets. Texture modes: A1, two-layer recto/verso, realistic through-thickness decorrelation fitted to WO-001. Meshes: graph-displaced, isometric tilted, stretched. Also a second sheet, Gaussian and Poisson noise, the reference trilinear renderer, and truth h along the rendered normal.
+  - `vesuvius_challenge.crlb`: Cramér–Rao bound per pair and per multi-layer stack, from the generator's spectra.
+  - `vch synth run` / `vch synth report` at the python-lab-ux floor; sweep `configs/synth/wo002.toml`; report `reports/2026-11-wo002/`.
+  - Five selftest checks: fast path vs skimage on hypothesis-generated patches (< 0.02 px); villa `_phase_correlate` sign convention; analytic integration; CRLB consistency; cubic resampler.
+  - `tests/test_lpsf.py`, `tests/test_synthetic.py` (P1–P6, degenerate inputs, renderer known-answer tests, sign convention, metric, band-pass, sinusoid trap).
+  - CI: `.github/workflows/ci.yml` (uv sync --locked, ruff check and format, pytest, selftest; Python 3.14).
+  Why: WO-002. Builds on: `foroosh2002`, `guizar2008`, `frankot1988`, `lucas1981`, `robinson2004`, `keys1981`, `skimage_pcc`, `villa_estimate_canvas_offset`.
+- 2026-11-01 — WO-002 report `reports/2026-11-wo002/report.md`. It is built from saved sweeps (`sweeps/`, 1,460 synthetic cases) and two diagnosis scripts (`scripts/wo002_diagnose_*.py`), with a Σ-calibration acceptance criterion added on Kevin's instruction and a fibre-orientation sweep. Results:
+  - P1/P2 pre-registered slope criterion: **failed**, for a geometric reason at 20° (P·tan θ against effective sheet thickness);
+  - A1 offset recovery and step detection: passed;
+  - realistic-decorrelation mode: orientation-dependent, sign-reversed slopes (diagnosed);
+  - Σ: not calibrated.
+  Why: WO-002 §3.6 and addenda. Builds on: `robinson2004`.
 - 2026-11-01 — DR-009: outcome of an external derivation review of LPSF (Gemini), each item checked by the Planner. Adopted:
   - exact tan θ geometry;
   - metric correction;
@@ -40,6 +55,8 @@ Each entry says **what** changed, **why**, and **what it builds on** (citation k
   Why: the June documents contained material errors (see Changed). Builds on: `scrollprize_prizes`, `scrollprize_winners`, `scrollprize_open_problems`, `villa`.
 
 ### Changed
+- 2026-11-01 — Patch resampling in LPSF refinement now uses prefiltered cubic B-splines instead of Keys cubic convolution. Keys' phase error biased refined slopes by +10% for 8-px texture across the tilt (`reports/2026-11-wo002/diagnosis-overshoot-keys-resampler.json`); every reported run uses the fixed code. Builds on: `keys1981`.
+- 2026-11-01 — `vch synth run` survives a killed worker: it rebuilds the pool, retries in-flight cases once, checkpoints Parquet every 50 cases and always writes what finished. The synthetic volume generator works in float32 slabs. Why: the first full sweep was killed (most likely out of memory) and lost every result.
 - 2026-11-01 — WO-003 reissued as rev 3 (DR-009), before any real-data LPSF run: step-0 physical diagnostics and W_max; baseline B4; re-specified S1 to S3; a value claim requiring LPSF to beat or complement B4. WO-002 Addendum 2 (binding). `docs/method-lpsf.md` revised (exact geometry, metric, band-pass, estimator choice, consistency residual, failure modes, normal-field prior art).
 - 2026-11-01 — WO-003 reissued as rev 2, before any real-data LPSF run:
   - stack of 81 layers at step 1 (±96 µm), with a cost probe first;
