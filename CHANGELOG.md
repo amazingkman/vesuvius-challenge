@@ -40,6 +40,7 @@ Each entry says **what** changed, **why**, and **what it builds on** (citation k
 - 2026-10-31 — Superseded planning docs: the combined WO-002/003, the old WO-001, and the bootstrap/handoff note. Content was folded into the new WOs and `docs/workflow.md`.
 
 ### Fixed
+- 2026-11-01 — `vch render` no longer records a skipped render as a result: `vc_render_tifxyz` exits 0 without rendering when its outputs exist, so the command now refuses to run over existing layers unless `--overwrite` is given. Why: this made a reproduction check falsely pass. Builds on: `villa`.
 - 2026-10-31 — Primer corrections (full table in `docs/primer.md` §7):
   - segment 20241108120732 is Scroll 5, not Scroll 1;
   - the Kaggle pool was $200K;

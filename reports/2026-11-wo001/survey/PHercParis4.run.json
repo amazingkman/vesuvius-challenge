@@ -1,0 +1,44 @@
+{
+  "finished_at": "2026-11-01T05:53:00+00:00",
+  "image_digest": null,
+  "outputs": [
+    "reports/2026-11-wo001/survey/PHercParis4.parquet"
+  ],
+  "params": {
+    "legacy": true,
+    "sample": "PHercParis4",
+    "workers": 12
+  },
+  "partial": false,
+  "repo_commit": "4540c78577f7d0210f13e8a3bd5f2b7c0a8c40c6",
+  "reproduce": "uv run vch survey PHercParis4 --out reports/2026-11-wo001/survey",
+  "results": {
+    "legacy_only": 272,
+    "mesh_bytes_primary": 20381850472,
+    "segments_on_s3": 82,
+    "segments_with_any_tag": 7,
+    "superseded": 25,
+    "tag_distribution": {
+      "inspect": 7
+    },
+    "tag_distribution_legacy_only": {},
+    "with_ink_labels": 8,
+    "with_tifxyz": 82
+  },
+  "seed": null,
+  "source_sha256": "2e42a36ea1b99528cfe1bca7adc16953d342c4f658f5b33d65496a8ec34dec75",
+  "stage": "survey",
+  "started_at": "2026-11-01T05:51:43+00:00",
+  "versions": {
+    "numpy": "2.5.4",
+    "pyarrow": "26.0.0",
+    "python": "3.14.10",
+    "rich": "15.0.0",
+    "scipy": "1.18.1",
+    "tifffile": "2026.10.15",
+    "typer": "0.27.3",
+    "vesuvius": "0.2.4",
+    "zarr": "3.4.2"
+  },
+  "villa_sha": "d57c28ebee8776b618f9851c2289cc407ea99dd4"
+}

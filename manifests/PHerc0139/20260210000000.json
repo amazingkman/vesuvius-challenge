@@ -1,0 +1,46 @@
+{
+  "created_at": "2026-11-01T05:49:41+00:00",
+  "files": [
+    {
+      "etag": "1b454abf7e43d3e9f3844154a58d0822-2",
+      "last_modified": "2026-06-24T23:27:41.000Z",
+      "name": "x.tif",
+      "sha256": "66c108eabdc5c21443e850b26942265b0a972c78af3f95fcdddc32baa0b8a24b",
+      "size": 11212934,
+      "url": "https://vesuvius-challenge-open-data.s3.amazonaws.com/PHerc0139/segments/20260210000000-w058_2026021020/mesh/20260210000000-on-20260102150214-2.399um.tifxyz/x.tif"
+    },
+    {
+      "etag": "c79b6914e2c5f12f1c4e4a90244168bd-2",
+      "last_modified": "2026-06-24T23:27:47.000Z",
+      "name": "y.tif",
+      "sha256": "16f79c960993954b5c6231cf88be070368fd23bd20702c2ecc67e07f773b5acb",
+      "size": 11212934,
+      "url": "https://vesuvius-challenge-open-data.s3.amazonaws.com/PHerc0139/segments/20260210000000-w058_2026021020/mesh/20260210000000-on-20260102150214-2.399um.tifxyz/y.tif"
+    },
+    {
+      "etag": "958370c1aa42fad59ccdde708e4f05fb-2",
+      "last_modified": "2026-06-24T23:28:04.000Z",
+      "name": "z.tif",
+      "sha256": "8f9150eb7cc305053d100dae4ce48d55c8c9d8d2f259b021c6f3081a15b71cd2",
+      "size": 11212934,
+      "url": "https://vesuvius-challenge-open-data.s3.amazonaws.com/PHerc0139/segments/20260210000000-w058_2026021020/mesh/20260210000000-on-20260102150214-2.399um.tifxyz/z.tif"
+    },
+    {
+      "etag": "9fe39e1a61fa26604684c2f3975eabc6",
+      "last_modified": "2026-06-24T23:27:35.000Z",
+      "name": "meta.json",
+      "sha256": "e7fdd8ae13433b937712dc4a45b6c77abd1e785fc673eb793b9ef8c95a733b16",
+      "size": 411,
+      "url": "https://vesuvius-challenge-open-data.s3.amazonaws.com/PHerc0139/segments/20260210000000-w058_2026021020/mesh/20260210000000-on-20260102150214-2.399um.tifxyz/meta.json"
+    }
+  ],
+  "mesh_kind": "on-volume",
+  "mesh_path": "PHerc0139/segments/20260210000000-w058_2026021020/mesh/20260210000000-on-20260102150214-2.399um.tifxyz/",
+  "sample": "PHerc0139",
+  "schema": 1,
+  "segment": "20260210000000",
+  "volume_id": "20260102150214",
+  "volume_path": "PHerc0139/volumes/20260102150214-2.399um-0.2m-78keV-masked.zarr/",
+  "volume_url": "https://vesuvius-challenge-open-data.s3.amazonaws.com/PHerc0139/volumes/20260102150214-2.399um-0.2m-78keV-masked.zarr",
+  "voxel_um": 2.399
+}
