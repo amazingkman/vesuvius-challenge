@@ -74,9 +74,11 @@ def test_segment_id(dirname: str, expected: str) -> None:
 
 @pytest.mark.parametrize("byteorder", ["<", ">"])
 @pytest.mark.parametrize("compression", [None, "lzw"])
-def test_tiff_size_reads_the_header_without_the_pixels(byteorder: str, compression: str | None) -> None:
+@pytest.mark.parametrize("bigtiff", [False, True])
+def test_tiff_size_reads_the_header_without_the_pixels(byteorder: str, compression: str | None, bigtiff: bool) -> None:
     buffer = io.BytesIO()
-    tifffile.imwrite(buffer, np.zeros((70, 300), np.float32), byteorder=byteorder, compression=compression)
+    image = np.zeros((70, 300), np.float32)
+    tifffile.imwrite(buffer, image, byteorder=byteorder, compression=compression, bigtiff=bigtiff)
     with fake_bucket({"m/x.tif": buffer.getvalue()}) as server:
         assert survey.tiff_size(Bucket(server.endpoint), "m/x.tif") == (300, 70)
 
@@ -114,6 +116,21 @@ def test_segment_row_collects_tags_and_area_across_variants() -> None:
     assert row["area_cm2"] == 1.5
     assert row["has_ink_labels"]
     assert row["area_cm2_derived"] == pytest.approx(1e6 * (2.4e-4) ** 2)
+
+
+def test_area_vx2_comes_from_the_primary_mesh_not_another_variant() -> None:
+    objects = synthetic_objects()
+    original = "S/segments/20250101000000-w001/mesh/intermediate/tifxyz_original/meta.json"
+    objects[original] = b'{"area_vx2": 5.0}'
+    with fake_bucket(objects) as server:
+        row = survey.survey_s3_segment(
+            Bucket(server.endpoint),
+            "S",
+            "S/segments/20250101000000-w001/",
+            {"segments": {"20250101000000": {"original_volume_id": "20250202000000"}}},
+            {},
+        )
+    assert row["area_vx2"] == 1e6
 
 
 def test_segment_without_mesh_is_reported_not_dropped() -> None:

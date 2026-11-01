@@ -21,7 +21,8 @@ UM_PER_CM = 1e4
 TIFXYZ_FILES = ("x.tif", "y.tif", "z.tif", "meta.json")
 TIFF_IMAGE_WIDTH = 256
 TIFF_IMAGE_LENGTH = 257
-TIFF_ENTRY_BYTES = 12
+TIFF_CLASSIC = 42
+TIFF_BIG = 43
 
 # Fixed, so that tables from different samples combine even where a column is all empty.
 SCHEMA = pa.schema(
@@ -131,21 +132,31 @@ def parse_autoindex(html: str) -> list[str]:
 
 
 def tiff_size(bucket: Bucket, key: str) -> tuple[int, int] | None:
-    """Width and height from a classic TIFF header, using ranged reads only."""
-    head = bucket.get_range(key, 0, 8)
+    """Width and height from a classic or Big TIFF header, using ranged reads only."""
+    head = bucket.get_range(key, 0, 16)
     order = {b"II": "<", b"MM": ">"}.get(head[:2])
-    if order is None or struct.unpack(order + "H", head[2:4])[0] != 42:
+    if order is None:
         return None
-    ifd = struct.unpack(order + "I", head[4:8])[0]
-    count = struct.unpack(order + "H", bucket.get_range(key, ifd, 2))[0]
-    entries = bucket.get_range(key, ifd + 2, count * TIFF_ENTRY_BYTES)
+    version = struct.unpack(order + "H", head[2:4])[0]
+    if version == TIFF_CLASSIC:
+        ifd = struct.unpack(order + "I", head[4:8])[0]
+        count_format, count_bytes, entry_bytes = "H", 2, 12
+    elif version == TIFF_BIG:
+        ifd = struct.unpack(order + "Q", head[8:16])[0]
+        count_format, count_bytes, entry_bytes = "Q", 8, 20
+    else:
+        return None
+    count = struct.unpack(order + count_format, bucket.get_range(key, ifd, count_bytes))[0]
+    entries = bucket.get_range(key, ifd + count_bytes, count * entry_bytes)
+    value_format = {3: "H", 4: "I", 16: "Q"}
     size: dict[int, int] = {}
     for index in range(count):
-        tag, kind = struct.unpack_from(order + "HH", entries, index * TIFF_ENTRY_BYTES)
-        if tag in (TIFF_IMAGE_WIDTH, TIFF_IMAGE_LENGTH):
-            size[tag] = struct.unpack_from(order + ("H" if kind == 3 else "I"), entries, index * TIFF_ENTRY_BYTES + 8)[
-                0
-            ]
+        start = index * entry_bytes
+        tag, kind = struct.unpack_from(order + "HH", entries, start)
+        if tag in (TIFF_IMAGE_WIDTH, TIFF_IMAGE_LENGTH) and kind in value_format:
+            size[tag] = struct.unpack_from(
+                order + value_format[kind], entries, start + entry_bytes - (8 if version == TIFF_BIG else 4)
+            )[0]
     if len(size) != 2:
         return None
     return size[TIFF_IMAGE_WIDTH], size[TIFF_IMAGE_LENGTH]
@@ -171,13 +182,12 @@ def survey_s3_segment(
     primary = choose_primary(variants, original_volume)
 
     tags: set[str] = set()
-    area_cm2 = area_vx2 = None
+    area_cm2 = None
     primary_area = primary_scale = None
     for variant in variants:
         meta = bucket.get_json(variant.prefix + "meta.json")
         tags.update(tags_from_meta(meta))
         area_cm2 = area_cm2 if area_cm2 is not None else meta.get("area_cm2")
-        area_vx2 = area_vx2 if area_vx2 is not None else meta.get("area_vx2")
         if variant is primary:
             primary_area = meta.get("area_vx2")
             primary_scale = (meta.get("scale") or [None])[0]
@@ -209,7 +219,7 @@ def survey_s3_segment(
         "volume_on_s3": bool(primary and primary.volume_id in volumes),
         "tags": sorted(tags),
         "area_cm2": area_cm2,
-        "area_vx2": area_vx2,
+        "area_vx2": primary_area,
         "area_cm2_derived": derived,
         "path": prefix,
         "legacy_path": None,
