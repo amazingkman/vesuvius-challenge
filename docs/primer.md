@@ -1,4 +1,4 @@
-# Vesuvius Challenge primer: state as of 2026-10-31
+# Vesuvius Challenge primer: state as of 2026-10-31 (revised 2026-11-01 with WO-001 findings)
 
 This replaces the 2026-06-12 primer. Section 7 lists which June claims were wrong or have gone stale. All sources were accessed between 2026-10-31 and 2026-11-01. Tiers: T1 = peer-reviewed or official scrollprize.org/EduceLab; T2 = Substack and prize announcements; T3 = community repos, issues and PRs. Anything marked *unverified* must be checked before we rely on it.
 
@@ -42,12 +42,12 @@ This replaces the 2026-06-12 primer. Section 7 lists which June claims were wron
 - **VC3D** (villa `volume-cartographer/`) is the team's main tool. It is semi-automated: GrowPatch (Ceres optimization along the recto surface prediction), Copy Out/In for neighbouring wraps (including a neural version), and a neural-tracer panel. Releases: "VC3D Stable" 2 Aug 2026 and "VC3D Latest" 6 Oct 2026. Container: `ghcr.io/scrollprize/villa/volume-cartographer:edge` [T1 Open Problems; T3 villa].
 - **Spiral fitting** (Henderson, WACV 2026, arXiv:2512.04927) is described as "our current state of the art" for whole-scroll segmentation, and a July award made it run on 12 GB GPUs [T1].
 - **Lasagna** (villa `lasagna/`) is PyTorch multi-sheet optimization and fiber tracing. It has a local-correction mode that moves a draft surface toward the true one [T1].
-- **Deprecated:** ThaumatoAnakalyptor, now in villa `deprecated/`. **Historical:** FASP, whose tools survive in VC3D (`vc_grow_seg_from_segments`, `vc_tifxyz_winding`) [T3].
+- **Deprecated:** ThaumatoAnakalyptor, now in villa `deprecated/`. **Historical:** FASP. `vc_grow_seg_from_segments` survives in VC3D. `vc_tifxyz_winding` was **removed** at our villa pin and exists only in the May 2026 image (WO-001 audit §4) [T3].
 - **Kaggle Surface Detection (2026):** $200K pool. Metric 0.30·TopoScore + 0.35·SurfaceDice@2 + 0.35·VOI. Won by a long-trained nnU-Net ensemble, released as `surface_m7_nnunet` [T1 winners; T3 writeups].
 - **QC today:**
   - human inspection in VC3D ("check if you can visually follow horizontal papyrus fibers") with meta.json tags;
   - winding annotations feeding the spiral fit;
-  - `vc_tifxyz_winding`;
+  - `vc_tifxyz_winding` (May 2026 image only; removed at our pin);
   - community checkers (TIFXYZ Doctor, windcheck, spiralcheck, windaudit, scroll-data-audit).
   The team has **no official automated quality metric**. Open Problems lists "stronger diagnostics" and scan-quality metrics as needs [T1].
 
@@ -58,10 +58,10 @@ This replaces the 2026-06-12 primer. Section 7 lists which June claims were wron
   - **Core API:** `vesuvius.Volume` streams OME-Zarr from S3 with caching. Reading meshes uses `vesuvius.tifxyz.Tifxyz` / `read_tifxyz()`.
   - **CLI entry points** (from pyproject): `predict`, `compute_st`, `voxelize_obj`, `refine_labels`, `train`, `zarr_tasks`, `find_patches`, `surface_preflight`, and others.
   - **Removed:** `accept_terms` (see `docs/data-licensing.md`). The README table still lists it; WO-004 fixes that.
-  - **Unverified:** whether PR #2365 (tifxyz extra, read+write) and PR #2373 (Python tifxyz renderer) are merged at our pin.
+  - **PRs #2365 (tifxyz extra) and #2373 (Python tifxyz renderer) are open, not at our pin.** `read_tifxyz` / `write_tifxyz` and normals already exist at the pin, but importing them needs `cv2`, `numba` and `imagecodecs` (WO-001 audit §3).
   [T3]
 - **`vc_render_tifxyz`** (VC3D, C++): `--num-slices N --slice-step s`, can stream with `--remote-url`. FASP-era docs describe 21 layers 1 voxel apart, with layer 10 central [T3].
-- **`vc_objrefine`:** per-vertex alpha-composite normal offset. PR #2224 adds an offset report, and PR #2358 ports it to `refine_surface` [T3]. These are our baseline and integration target.
+- **`vc_objrefine`:** per-vertex alpha-composite normal offset. PR #2224 proposes an offset report, but it is **open and not at our pin**. PR #2358 (merged) added `refine_surface` but **no** report (WO-001 audit §1). `vc_objrefine` is our baseline, run as a black box, and our integration target [T3].
 - **Issue fit:** villa #193, "methods for generating surface, fiber or ink labels" (help wanted / progress-prize candidate), is the closest home for LPSF. No issue exists about layer-32 optimization or render sharpness [T3].
 
 ## 5. Data
@@ -71,19 +71,19 @@ This replaces the 2026-06-12 primer. Section 7 lists which June claims were wron
   - dl.ash2txt.org for legacy `.volpkg` data and community uploads;
   - Hugging Face for curated sets.
   [T1 scrollprize.org/data; T3 open-data README]
-- **Layout** (open-data README): `{sample}/volumes|segments|representations`. A segment has `mesh/tifxyz/{x,y,z}.tif + meta.json`, `mesh/intermediate/*.obj`, and `surface-volumes/{res}-{energy}-volume-{id}.zarr|.tifs`. Volumes are 8-bit OME-Zarr with 128³ chunks [T3].
+- **Layout** (open-data README): `{sample}/volumes|segments|representations`. Measured in WO-001, the meshes are at `segments/<dir>/mesh/<id>-on-<volume>-<res>.tifxyz/{x,y,z}.tif + meta.json`, one per registered volume, plus `mesh/intermediate/tifxyz_{original,normalized,flattened}/`. The tifxyz files are float32, invalid points are −1 (validity: `mask.tif`, else z > 0), and `scale` is 0.05 (one grid step = 20 voxels). Volumes are 8-bit Zarr v2, 128³ chunks. Some meshes are BigTIFF [T3; WO-001 audit §3, survey §1].
 - **Layer conventions are inconsistent, so check per segment:**
   - legacy VC: 65 layers, 32 = middle [T1 tutorial_VC];
   - FASP / `vc_render_tifxyz` examples: 21 layers, 10 = middle;
-  - published 9 µm segments: 28 layers;
+  - published 9 µm segments: 28 layers. That is even, so with `vc_render_tifxyz` no layer sits on the surface;
   - the open-data README labels "00.tif # Layer 0 (surface)", which contradicts the others.
-  **We render our own surface volumes with explicit flags** and avoid this ambiguity entirely.
+  **We render our own surface volumes with explicit flags** and avoid this ambiguity entirely. With `vc_render_tifxyz`, layer k sits at (k − (N−1)/2)·step, and rising k runs along −n of `vesuvius` (measured; WO-001 audit §4).
 - **Scroll 1 segments:**
   - The data browser lists 82 segments.
   - Some legacy `paths/` folders now carry a `_superseded` suffix (villa PR #2132, 21 Oct 2026).
-  - June candidate IDs 20230827161846, 20231210121321 and 20230902141231 are **unverified**.
+  - June candidate IDs (WO-001): 20230827161846 is superseded and not on S3; 20231210121321 is on S3 with meshes on four volumes; 20230902141231 is legacy only. All are moot for now, because Paris 4 is excluded (DR-008).
   - **20241108120732 is Scroll 5 (PHerc. 172), not Scroll 1.**
-- **FASP `state.tif`** (0 = no surface / 80 = infilled / 100 = high quality) was documented at dl.ash2txt.org/community-uploads/waldkauz/fasp/; current hosting is **unverified** [T3].
+- **FASP `state.tif`** (0 = no surface / 80 = infilled / 100 = high quality) was documented at dl.ash2txt.org/community-uploads/waldkauz/fasp/; it **is still hosted** (v1/masks/state.tif, SHA-256 in WO-001 survey §6). It very likely describes PHerc. Paris 4, so it is excluded under the Paris 4 reservation (DR-008) [T3].
 
 ## 6. Self-supervised learning (context for DR-006)
 
@@ -102,7 +102,7 @@ This replaces the 2026-06-12 primer. Section 7 lists which June claims were wron
 | ~70% of PHerc. 172 unwrapped | True ("bottom 70%") |
 | "Sharpening the layers rendering… layer 32…" is an open wishlist item | **Wrong.** It is segmata's own project description, which makes it prior art (DR-001 superseded) |
 | Method A is a "clean gap" with HIGH novelty | **Wrong.** Refinement is prior art; QC is partial prior art; only the estimator kernel is new (DR-002) |
-| VC3D tags Approved/Defective/Reviewed/Revisit/Inspect | Probably true; one snapshot omits Revisit. Verify in WO-001 |
+| VC3D tags Approved/Defective/Reviewed/Revisit/Inspect | **Corrected (WO-001):** the code has `approved`, `defective`, `reviewed`, `inspect`, `partial_review`; `revisit` is docs-only. **No public meta.json carries approved/defective/reviewed** |
 | VC fork lineage; maintained in villa | True |
 | Team trained a 3D DINO | True (dinovol) |
 | Standalone ScrollPrize/vesuvius archived | True (21 Nov 2024) |
@@ -112,13 +112,15 @@ This replaces the 2026-06-12 primer. Section 7 lists which June claims were wron
 | Segment 20241108120732 listed as an example Scroll 1 GP segment | **Wrong.** It is Scroll 5 |
 | ~65 layers, middle = on-surface, treated as universal | Wrong as a universal. Conventions vary (§5) |
 | `pip install vesuvius` + `vesuvius.accept_terms --yes` | Stale. PyPI is older than villa main, and accept_terms was removed |
-| Validation against FASP `state.tif` as the primary statistic | Demoted. Hosting is unverified, and injected perturbations give real ground truth (DR-002) |
+| Validation against FASP `state.tif` as the primary statistic | Dropped. It is still hosted but almost certainly Paris 4, which is under reservation (DR-008); injected perturbations give real ground truth (DR-002) |
 
-## 8. Gaps we did not close
+## 8. Gaps (status after WO-001)
 
-- **Not searched:** Discord; villa full code text.
-- **Unverified merge status:** PRs #2224, #2365, #2368, #2373.
-- **Not posted yet:** the November deadline.
-- **Unknown scope:** the Paris 4 publication reservation.
-
-WO-001 closes the checkable ones.
+| Gap | Status |
+|---|---|
+| villa full code text | Closed. One new prior-art item, `estimate_canvas_offset.py` (DR-002 addendum) |
+| PR merge status #2224, #2365, #2368, #2373 | Closed: all open, none at the pin. `vesuvius.tifxyz` read and write already exist at the pin, but need `cv2`, `numba` and `imagecodecs` |
+| Paris 4 reservation scope | Closed. It bars publishing "formal analyses" until 2027-06-25 without permission (DR-008) |
+| Discord | **Open** (Kevin): novelty check, where review tags live, and Paris 4 permission |
+| November deadline | **Open**: not posted as of 2026-11-01 |
+| Renderer vs. pin | New finding. The newest VC3D image (2026-05-13) predates the pin, but geometry agrees (DR-004 addendum, DR-008) |

@@ -81,3 +81,33 @@ Every WO names exactly one executor. Kevin reviews and merges.
 ## DR-007 — 2026-10-31 — Repository name, license, visibility
 
 The repository is `vesuvius-challenge`, MIT licensed, and public. The README states it is not affiliated with the Vesuvius Challenge team. Public from day one serves the prize criterion "released or open-sourced early" [T1: scrollprize.org/prizes]. No scroll data and no hidden-text revelations ever enter the repo (`docs/data-licensing.md`).
+
+---
+
+## DR-002 addendum — 2026-11-01 — Code-search result (WO-001)
+
+The full-text search of villa at `d57c28e` judged all 2,483 hits (`reports/2026-11-wo001/upstream-audit.md` §6). It found one piece of prior art not known before: `estimate_canvas_offset.py`, which uses tile-wise phase correlation on renders to audit a constant 2-D canvas offset. DR-002 items (a)–(c) are not anticipated, so the decision stands. The novelty wording in `method-lpsf.md` §6 now names that file and claims only the inter-layer use and what is built on it. **Discord check: still pending (Kevin).**
+
+---
+
+## DR-008 — 2026-11-01 — WO-001 outcomes: study data, renderer of record, WO-003 redesign
+
+**Context.** WO-001 (`reports/2026-11-wo001/`) closed most primer gaps and raised five decisions.
+
+**Decisions.**
+1. **Study scroll: PHerc0139, 2.399 µm volume `20260102150214`, native meshes only.** Segments: w043, w057, w044, w058, in WO-001's priority order. Reasons:
+   - CC BY-NC (embargo lifted 2026-06-25 per site code; T3);
+   - meshes traced on that volume, which avoids the cross-frame cost reported in issue #1845;
+   - public defect measurements exist (#2167; ChaseHendrick notes).
+2. **PHerc. Paris 4 is excluded from all published analysis, and so is FASP `state.tif`.** The Paris 4 notice bars "formal analyses" based on the data until 2027-06-25 without permission. WO-001 judged `state.tif` "almost certainly" Paris 4; we treat it as Paris 4 until shown otherwise. Kevin may ask the team for permission. Until a written yes, these stay out.
+3. **No review tags are public.** The paired-perturbation design does not need them. Tag-based analysis is dropped from WO-003 and stays a backlog item, pending Kevin asking on Discord where the team keeps review tags. `inspect` is not treated as a quality label.
+4. **Renderer of record: the published Podman image** (built 2026-05-13 from `1e3f4c0`, digest in DR-004). WO-001 showed it agrees with the pinned `vesuvius` read path (r 0.992–0.995, best offset 0) at `--group-idx 0`. Building VC3D from source is deferred until a WO needs a flag the image lacks. Always render at `--group-idx 0` and with odd `--num-slices`.
+5. **WO-003 is pre-registered in physical units, and redesigned before any LPSF output on real data exists.**
+   - **Stack:** 81 layers at step 1 voxel (±96 µm). This is close to one local sheet pitch (~113 µm per #2167), wide enough for realistic offsets and the neighbouring-sheet test. P1 is tested by subsampling, with no extra renders.
+   - **Perturbations:** sinusoidal corrugations replace global ramps, because a 20° ramp across a crop moves the mesh hundreds of voxels off the sheet. Amplitudes are now in µm, at realistic error scales.
+   - **Baseline B2:** `vc_objrefine` run as a black box, since the offset report (PR #2224) is not available.
+   - Full revision: `planning/WO-003-…` rev 2.
+6. **Repository stays public.** The Planner-review gate in `docs/workflow.md` applies to *announcements and prize submissions*, not to PR contents. To make that safe, PRs never contain images derived from renders, only fields, statistics, IDs and checksums.
+7. **Default branch is `master`.** Docs updated.
+
+**Reversal.** If the Vesuvius Challenge grants written permission for Paris 4 QC analysis, item 2 can be revisited for a secondary analysis. If WO-003's step 0 cost probe shows the 81-layer design cannot fit the compute budget, the Planner re-issues WO-003 before any LPSF run on real data.

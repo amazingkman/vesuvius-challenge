@@ -59,6 +59,17 @@ Implement the LPSF estimator from `docs/method-lpsf.md` and test predictions P1�
 
 Real scroll data; Podman; GPU; mesh writing; refinement or integration with VC3D.
 
+## Addendum — 2026-11-01 (Planner, after WO-001; binding)
+
+If WO-002 is already in progress, fold these in. They tighten the WO; they don't change its scope.
+
+1. **Realistic decorrelation.** Add a synthetic texture mode whose through-thickness correlation matches the WO-001 measurement on PHerc0139 at 2.399 µm: r ≈ 0.93, 0.78 and 0.60 at 1, 2 and 3 voxels (`reports/2026-11-wo001/data-survey.md` §9). Run the P1/P2 sweep in this mode as well, and report how it compares with the A1-satisfying mode.
+2. **Small angles.** Real tilt errors are mostly a few degrees, so extend the θ sweep with 0.5°, 1° and 3°. Report the **minimum detectable tilt** per patch, and per patch averaged over adjacent pairs, at realistic SNR and decorrelation. WO-003 depends on this number.
+3. **Second reference implementation.** Cross-check the fast path against `vesuvius.tifxyz_label_transfer.estimate_canvas_offset._phase_correlate` (villa, MIT, at the pin) as well as skimage, and report agreement. If it is accurate enough to be the fast path, prefer reuse (DR-003). Cite `villa_estimate_canvas_offset`.
+4. **Conventions.** The normal **n** follows VC3D, which is the direction of rising layer index (= −n of `vesuvius`). Stacks use odd K with k₀ = (K−1)/2. Document the sign of **s** relative to ∇h with a known-answer test.
+5. **Freeze the defaults.** Patch size, overlap and the in-sheet band rule are frozen when this WO merges. WO-003 uses them unchanged.
+6. **No render-derived images** in the repo (DR-008). Synthetic-only figures are fine.
+
 ## 6. Provenance log (executor appends below)
 
 ---

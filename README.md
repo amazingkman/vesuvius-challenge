@@ -97,4 +97,4 @@ Scroll data is never committed or redistributed. Scrolls 1â€“4 and Fragments 1â€
 
 ## Status
 
-See `CHANGELOG.md` and `planning/`. As of 2026-11-01: WO-001 is complete apart from the open items in `reports/2026-11-wo001/`, and WO-002 to WO-004 are issued.
+See `CHANGELOG.md` and `planning/`. As of 2026-11-01: WO-001 is complete and reviewed (DR-008). WO-002 (with addendum), WO-003 rev 2 and WO-004 are issued. Study data is PHerc0139; Paris 4 is excluded until 2027-06-25.

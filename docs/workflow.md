@@ -11,14 +11,16 @@
 
 ## Work order lifecycle
 
-1. Planner writes `planning/WO-NNN-short-name.md`, naming one **Executor** (Cloud or VSCode). Kevin commits it to `main`.
+1. Planner writes `planning/WO-NNN-short-name.md`, naming one **Executor** (Cloud or VSCode). Kevin commits it to `master` (the default branch).
 2. Kevin tells the executor: "Execute planning/WO-NNN-short-name.md".
 3. The executor works on branch `wo-NNN-short-name` and opens a PR. Every WO ends with:
    - tests green (`uv run pytest`) and `uv run ruff check` clean;
    - README and CHANGELOG updated in the same PR;
    - a provenance log appended to the WO file: commands run, villa SHA, container image digest, data identifiers, anything surprising;
    - commits using conventional prefixes (`feat:`, `fix:`, `docs:`, `test:`, `chore:`).
-4. Kevin reviews and merges. Any WO that produced findings, figures or a report goes back to the Planner for review before anything is public.
+4. Kevin reviews and merges. The repository is public, so a PR is public as soon as it is pushed. Two rules make that safe (DR-008):
+   - **PRs never contain render-derived images.** Only field maps, statistics, IDs and checksums go in; example patches go to `data/derived/figures/` for review.
+   - **The Planner reviews announcements before they go out.** That covers Discord posts, prize submissions and any public novelty claim. Every findings report also goes back to the Planner before its results are announced.
 
 ## Work order template
 
@@ -36,4 +38,4 @@ Executor: Cloud | VSCode     Depends on: WO-…     Status: issued
 
 ## Hand-offs between executors
 
-Cloud writes code that never needs scroll data: all tests use synthetic fixtures generated in-process. VSCode runs that code on real data. When a VSCode WO depends on Cloud's code, it starts from merged `main`.
+Cloud writes code that never needs scroll data: all tests use synthetic fixtures generated in-process. VSCode runs that code on real data. When a VSCode WO depends on Cloud's code, it starts from merged `master`.

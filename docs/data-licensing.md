@@ -7,6 +7,9 @@ Sources: the villa `vesuvius` README, "Data licence" section [T3: github.com/Scr
 | Data | Terms |
 |---|---|
 | Scrolls 1–4 and Fragments 1–6 (EduceLab-Scrolls; DLS scans before 2025) | EduceLab-Scrolls terms below. © EduceLab / University of Kentucky |
+| **PHerc. Paris 4 (Scroll 1), all scans and derived materials** | **A modified CC BY-NC 4.0, running until 2027-06-25.** Users may examine, study, test and analyze the data, but may not publish scholarly claims, transcriptions, translations, editions, interpretations or **formal analyses** based on it without permission [T3: `villa_atlas_overlay`, read at pin 2026-11-01]. **We publish nothing derived from Paris 4, including FASP `state.tif` analyses, without written permission** (DR-008) |
+| PHerc0139 (our study scroll) | CC BY-NC 4.0. The embargo was lifted 2026-06-25 per a comment in the site's `buildIndex.js` [T3, WO-001 survey §5] |
+| PHerc1667 (Scroll 4) | Older scans fall under EduceLab terms; check each scan |
 | All other Vesuvius Challenge datasets (newer scans, e.g. PHerc. 172, 139, 343, the 2025 ESRF scans) | CC BY-NC 4.0 "unless otherwise noted" |
 | Curated datasets and checkpoints (Hugging Face) | Check each dataset card |
 
@@ -29,9 +32,10 @@ villa `main` removed the `vesuvius.accept_terms` command; its module now says no
 | Code (MIT) | Raw volumes, surface volumes, meshes, `.ppm`, or tifxyz from the data server |
 | Segment IDs, URLs, checksums (`MANIFEST.json`) | Any rendering that reveals hidden text or ink, from any scroll, without written approval |
 | Derived QC maps (shift, offset, curl fields) and summary statistics, CC BY-NC 4.0, citing the source data | Data from the Discord server |
-| Figures of papyrus texture with no legible text, after Planner and Kevin review | Anything from the PHerc. Paris 4 publication reservation before it ends (the data-browser page lists a reservation "until 25/06/2027", scope unverified; treat it as restrictive) |
+| Field maps (ĥ, curl, ρ, shift) without the render underneath | **Any render-derived image (layer crops, overlays on renders) in the repo or a PR** (DR-008). They stay in `data/derived/figures/` for private review |
+| | Anything analysing PHerc. Paris 4 before 2027-06-25 without written permission |
 
-Rule of thumb for figures: QC overlays on layer renders are fine only where no text is legible. If in doubt, show the field alone, without the render underneath.
+Rule for figures (tightened 2026-11-01, DR-008): in the repo and in PRs, show **fields alone**, never the render underneath. Render-derived images are for private review in `data/derived/figures/`. Publishing one, for example in a prize submission, needs Planner and Kevin review that confirms no legible text or ink, plus the scroll's terms.
 
 ## Attribution checklist for any report or submission
 

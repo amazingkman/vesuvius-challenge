@@ -10,6 +10,10 @@ A segment is a mesh (tifxyz quadmesh) with points **p**(u,v) and unit normals **
 
 where k₀ is the nominal on-surface layer and Δd is the slice step in voxels. With VC3D this is `vc_render_tifxyz --num-slices K --slice-step Δd` [T3: villa VC3D README and FASP README, accessed 2026-10-31].
 
+**Conventions measured in WO-001** (`reports/2026-11-wo001/upstream-audit.md` §4):
+- k₀ = (K−1)/2 for odd K. Even K puts no layer on the surface, so **always use odd K**.
+- With the image of record, rising k runs along **−n** of `vesuvius` (+N of VC3D); r ≈ 0.99 on four segments. In this document **n** therefore means the VC3D normal (layer-increasing direction). Code that computes normals with `vesuvius.tifxyz` must negate them.
+
 For every patch P (default 64×64 px, 50% overlap) and every adjacent pair (k, k+1), we estimate:
 
 - **s**ₖ(P): the sub-pixel in-plane translation between I_k and I_{k+1}, by phase correlation with upsampled-DFT peak refinement [Foroosh, Zerubia & Berthod 2002, IEEE TIP 11(3):188–200, doi:10.1109/83.988953; Guizar-Sicairos, Thurman & Fienup 2008, Opt. Lett. 33(2):156–158, doi:10.1364/OL.33.000156].
@@ -43,7 +47,7 @@ Consequences:
 
 | ID | Prediction | Test |
 |---|---|---|
-| P1 | \|**s**\| scales linearly with Δd at fixed θ | Render with slice step 0.5, 1 and 2; slope ≈ sin θ |
+| P1 | \|**s**\| scales linearly with Δd at fixed θ | Synthetic: Δd = 0.5, 1, 2. Real: subsample one 81-layer step-1 render at Δd = 1, 2, 4 (no extra renders); slope ≈ sin θ |
 | P2 | **s** ∥ **t** and \|**s**\|/Δd = sin θ; pure offset → **s** ≈ 0 | Synthetic tilt sweep 0–30°; offset sweep at θ = 0 |
 | P3 | k* tracks the injected constant offset | Offset sweep ±10 layers |
 | P4 | Curl residual ≈ 0 for smooth h; large at a step (sheet jump) | Smooth bump vs step discontinuity |
@@ -55,6 +59,8 @@ If P1 or P2 fail on synthetic sheets that satisfy A1, the model is wrong and LPS
 ## 4. Known failure modes and threats to validity
 
 - **A1 violated.** Papyrus has two fiber layers (horizontal and vertical) at different depths. Texture changes through the thickness, so ρ drops and **s** can bias. Expect the estimate to be best within one fiber layer, where the slice step is smaller than the fiber-layer thickness.
+  - **Measured scale (WO-001, PHerc0139, 2.399 µm, four segments):** texture correlation between the on-surface layer and samples ±d voxels along the normal falls to r ≈ 0.93 at 1 voxel, 0.78 at 2 and 0.60 at 3 (`data-survey.md` §9). A1 therefore holds only over a few voxels (~5–7 µm) at this resolution.
+  - **Consequences:** use adjacent pairs at Δd = 1. A larger step trades a bigger signal (Δd·sin θ) for faster decorrelation, so P1 must be tested on real data and not assumed. WO-002's synthetic texture should match this correlation length.
 - **Aperture problem.** Strongly oriented fiber texture constrains only the shift component perpendicular to the fibers. Patches need Σ, and the solver must down-weight the unobservable direction instead of trusting it.
 - **A2 violated.** Flattening and UV stretch turn pixel shifts into non-isometric quantities. Convert using the tifxyz grid scale and the local metric.
 - **Texture confound.** Low-contrast or damaged papyrus lowers ρ even when the surface is correct. WO-003 stratifies by contrast and structure-tensor coherence, and uses *paired* comparisons (section 5), which cancel texture.
@@ -62,23 +68,35 @@ If P1 or P2 fail on synthetic sheets that satisfy A1, the model is wrong and LPS
 
 ## 5. Validation principle: injected perturbations on real segments
 
-Start from a published, reviewed tifxyz segment. Displace its vertices along **n** by a known field h_inj(u,v): ramps (pure tilt), Gaussian bumps, and steps (synthetic sheet jumps). Re-render with the same renderer and estimate h. The unknown pre-existing error h₀ cancels in the difference:
+Start from a published tifxyz segment. Displace its vertices along **n** by a known field h_inj(u,v): sinusoidal corrugations (controlled local tilt), Gaussian bumps and steps (synthetic sheet jumps). Re-render with the same renderer and estimate h. The unknown pre-existing error h₀ cancels in the difference:
 
   ĥ(perturbed) − ĥ(original) ≈ h_inj
 
-This gives ground truth on real texture without trusting any label. Tag- and mask-based AUROC (VC3D Approved/Defective, FASP `state.tif` if still hosted) are secondary, observational checks.
+This gives ground truth on real texture without trusting any label. WO-001 found that no public segment carries an Approved or Defective tag, so "published" replaces the earlier "reviewed". The paired design does not need review status.
+
+**The perturbed render must come from re-rendering the perturbed mesh. Never shift the original stack along its layer axis instead.** Displacing vertices tilts the mesh normals, and the tilt is exactly what produces the in-plane slide (§2). Resampling the original stack at depth k + h/Δd keeps the old normals, so it removes the signal and makes LPSF look blind.
+
+Tag-based checks are skipped (no public tags). FASP `state.tif` almost certainly covers PHerc. Paris 4, which is under a publication reservation until 2027-06-25, so it is excluded (DR-008).
 
 ## 6. Relation to prior work (cite all of these in any report)
 
 | Work | What it does | Our relation |
 |---|---|---|
 | segmata (S. Gouttebroze), khartes fork; $1K Apr 2025 [T1 winners; T3 github.com/sgoutteb/segmata] | Vertex displacement along normals to maximize bright pixel count; "sharpening the layers rendering… optimizing the layer 32" | Direct prior art for render-driven normal refinement. LPSF is a different signal (inter-layer registration) for the same goal |
-| `vc_objrefine` + offset report, villa PR #2224 (ChaseHendrick) [T3] | Per-vertex alpha-composite normal offset | Primary baseline; integration target |
+| `vc_objrefine` (VC3D); offset report proposed in villa PR #2224 (ChaseHendrick), open and not at our pin [T3] | Per-vertex alpha-composite normal offset | Primary baseline, run as a black box: its correction = refined mesh − input mesh along **n**. Integration target |
 | Lasagna local-correction mode [T1 Open Problems] | Moves a draft surface toward prediction volumes | Prediction-based alternative; possible consumer of our offsets |
 | recto-offset (TAUIL Abd Elilah) [T3] | Learned per-pixel normal offset from 25 layers | Learned baseline |
 | `vesuvius.snap_labels`, villa PR #2368 [T3] | Moves labels onto the recto face | Related; merge status unverified |
 | TIFXYZ Doctor v0.2, $1K Jul 2026 [T1 winners] | Localizes synthetic normal-offset steps | Partial prior art for QC; baseline |
 | offset-sweep (LynnHenry) [T3] | Ink-AUC cost of normal offsets; negative sheet-snap result | Baseline and context |
 | winding-phase (millerandmuller) [T3] | Riesz-transform phase along normals, used for winding | Phase methods are used here, but not for layer registration |
+| `vesuvius/tifxyz_label_transfer/estimate_canvas_offset.py`, in villa by 2026-08-20 [T3: `villa_estimate_canvas_offset`] | Hann-windowed tile-wise normalized cross-power spectrum on surface renders, with parabolic sub-pixel refinement; keeps peak height; fits translation plus drift to audit a constant 2-D annotation-canvas offset, at one depth | **Prior art for the correlation primitive on renders.** LPSF uses the same primitive along a different axis (between layers), for a different quantity (mesh tilt), and builds what that one does not (a per-patch field, integration, curl). Reuse or cross-check its `_phase_correlate` (MIT) under DR-003 |
+| villa issues #2243, #2370 [T3] | Correlation for in-plane alignment between renders or canvases | Related; not between layers |
 
-**Novelty claim, exactly:** no prior use was found of patchwise sub-pixel phase correlation *between adjacent rendered layers* to estimate a tilt-error field, integrate it into a normal-offset field, or use its curl residual as a diagnostic. The search covered scrollprize.org, the Substack, villa issues and PR search, PyPI and community repos found by search. **Discord was not searched, and neither was villa's full code text.** Before any public claim, WO-001 includes a code search of villa, and Kevin checks Discord by hand (DR-002).
+**Novelty claim, exactly (revised 2026-11-01 after the WO-001 code search):** phase correlation on surface renders is **not** new; villa already uses it in `estimate_canvas_offset.py`. What no source we searched contains is correlation *between adjacent layers along the normal* used to:
+- estimate a mesh-tilt field;
+- integrate that field into a normal-offset field;
+- use its curl residual as a diagnostic.
+
+**Searched:** scrollprize.org, the Substack, villa issues and PR titles and descriptions, PyPI, community repos found by search, and the full villa code text at `d57c28e` (2,483 hits judged; `reports/2026-11-wo001/upstream-audit.md` §6).
+**Not searched:** Discord, and diffs of open PRs. No public novelty claim until Kevin has checked Discord (DR-002).
