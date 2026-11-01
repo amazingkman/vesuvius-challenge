@@ -21,10 +21,14 @@ from vesuvius_challenge import survey as surveying
 from vesuvius_challenge import ui, verify
 from vesuvius_challenge.runrecord import RunRecord, load_record
 from vesuvius_challenge.s3 import Bucket, IncompleteDownload
+from vesuvius_challenge.synth_cli import synth_app
 
 install(show_locals=False)
 
-app = typer.Typer(help="Vesuvius Challenge tooling: survey, fetch, render, verify-io, selftest.", no_args_is_help=True)
+app = typer.Typer(
+    help="Vesuvius Challenge tooling: survey, fetch, render, verify-io, selftest, synth.", no_args_is_help=True
+)
+app.add_typer(synth_app, name="synth")
 
 DATA_ROOT = Path("data")
 Out = Annotated[Path, typer.Option(help="Directory for the Parquet table and run record.")]

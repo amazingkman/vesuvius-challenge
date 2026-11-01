@@ -238,6 +238,107 @@ def check_listing_parser() -> None:
     round_trips()
 
 
+def _fourier_shift(img: np.ndarray, shift: np.ndarray) -> np.ndarray:
+    """``out(x) = img(x + shift)`` for a periodic, band-limited image."""
+    f = np.fft.fftfreq(img.shape[0])
+    phase = np.exp(2j * np.pi * (f[:, None] * shift[0] + f[None, :] * shift[1]))
+    return np.real(np.fft.ifft2(np.fft.fft2(img) * phase))
+
+
+def check_phase_correlation_vs_skimage() -> None:
+    """WO-002 §3.3: fast path vs skimage (guizar2008), shift error < 0.02 px on noiseless generated patches."""
+    from hypothesis import given, settings
+    from hypothesis import strategies as st
+    from skimage.registration import phase_cross_correlation
+
+    from vesuvius_challenge import lpsf
+    from vesuvius_challenge.synthetic import Texture, texture_2d
+
+    @settings(max_examples=60, deadline=None)
+    @given(
+        st.sampled_from([32, 48, 64]),
+        st.floats(7.0, 16.0),
+        st.floats(-4.0, 4.0),
+        st.floats(-4.0, 4.0),
+        st.integers(0, 2**31 - 1),
+    )
+    def agrees(patch: int, wavelength: float, sv: float, su: float, seed: int) -> None:
+        rng = np.random.default_rng(seed)
+        a = texture_2d((patch, patch), Texture(spread_deg=None, wavelength=wavelength, bandwidth=0.3), rng)
+        truth = np.array([sv, su])
+        b = _fourier_shift(a, truth)
+        fast = lpsf.phase_correlate(a[None], b[None], lpsf.Params(window=False, beta=1.0)).shift[0]
+        slow = phase_cross_correlation(a, b, upsample_factor=100, normalization="phase")[0]
+        assert np.abs(fast - truth).max() < 0.02, f"fast {fast} vs truth {truth}"
+        assert np.abs(fast - slow).max() < 0.02, f"fast {fast} vs skimage {slow}"
+
+    agrees()
+
+
+def check_villa_convention() -> None:
+    """villa ``_phase_correlate`` (addendum 1 item 3) uses our sign convention; it is cross-checked, not reused."""
+    from vesuvius.tifxyz_label_transfer.estimate_canvas_offset import _phase_correlate
+
+    from vesuvius_challenge import lpsf
+    from vesuvius_challenge.synthetic import Texture, texture_2d
+
+    rng = np.random.default_rng(7)
+    a = texture_2d((64, 64), Texture(spread_deg=None, wavelength=6.0), rng)
+    truth = np.array([1.3, -2.2])
+    b = _fourier_shift(a, truth)
+    villa = np.array(_phase_correlate(a, b)[0])
+    fast = lpsf.phase_correlate(a[None], b[None], lpsf.Params(window=False, beta=1.0)).shift[0]
+    assert np.abs(villa - truth).max() < 0.5, f"villa {villa} disagrees in sign or scale with truth {truth}"
+    assert np.abs(fast - truth).max() < 0.02
+
+
+def check_integration_analytic() -> None:
+    """Screened LSQ and Frankot–Chellappa reproduce an analytic surface from its exact gradient."""
+    from vesuvius_challenge import lpsf
+
+    v, u = np.mgrid[0:24, 0:30].astype(np.float64)
+    spacing = 32.0
+    h = 3 * np.sin(2 * np.pi * u / 25) * np.cos(2 * np.pi * v / 31) + 0.002 * (u - 15) ** 2
+    gv = np.gradient(h, axis=0) / spacing
+    gu = np.gradient(h, axis=1) / spacing
+    cov = np.broadcast_to(1e-4 * np.eye(2), (*h.shape, 2, 2))
+    mask = np.ones(h.shape, bool)
+    for name, got in (
+        ("lsq", lpsf.screened_lsq(gv, gu, cov, spacing, mask)),
+        ("lsq screened", lpsf.screened_lsq(gv, gu, cov, spacing, mask, h, mask, zstar_sigma=10.0)),
+        ("fc", lpsf.frankot_chellappa(gv, gu, spacing)),
+    ):
+        err = (got - got.mean()) - (h - h.mean())
+        assert np.sqrt(np.mean(err**2)) < 0.12 * h.std(), f"{name}: rms {np.sqrt(np.mean(err**2)):.3f}"
+
+
+def check_crlb_consistency() -> None:
+    """The multi-layer Fisher information with two layers equals the pair formula."""
+    from vesuvius_challenge import crlb
+    from vesuvius_challenge.synthetic import Sheet, Texture, realistic_texture
+
+    for texture in (Texture(), realistic_texture(6.0)):
+        a = crlb.fisher_pair(texture, Sheet(), 1.0, 64)
+        b = crlb.fisher_stack(texture, Sheet(), 1.0, 64, 2)
+        assert np.allclose(a, b, rtol=1e-6), (a, b)
+
+
+def check_cubic_resampler() -> None:
+    """Patch resampling (prefiltered cubic B-spline) against scipy's cubic spline shift."""
+    from scipy import ndimage
+
+    from vesuvius_challenge import lpsf
+    from vesuvius_challenge.synthetic import Texture, texture_2d
+
+    rng = np.random.default_rng(3)
+    img = texture_2d((96, 96), Texture(spread_deg=None, wavelength=12.0), rng).astype(np.float32)
+    shift = np.array([[0.37, -1.62]])
+    coef = lpsf.spline_coefficients(img[None])
+    got = lpsf.resample_patches(coef, np.array([0]), np.array([16]), np.array([16]), 64, shift)[0]
+    want = ndimage.shift(img.astype(np.float64), shift[0], order=3, mode="mirror")[16:80, 16:80]
+    assert np.abs(got - want).max() < 1e-3 * np.abs(want).max(), np.abs(got - want).max()
+
+
 CHECKS: list[tuple[str, Callable[[], None]]] = [
     ("listing parser, generated pages", check_listing_parser),
     ("listing pagination against a fake bucket", check_listing_pagination),
@@ -247,4 +348,9 @@ CHECKS: list[tuple[str, Callable[[], None]]] = [
     ("tifxyz write/read round trip through vesuvius", check_tifxyz_round_trip),
     ("on-surface layer against the renderer's offset list", check_on_surface_layer),
     ("crop flag parsing, generated values", check_crop_parsing),
+    ("LPSF phase correlation vs skimage, generated patches", check_phase_correlation_vs_skimage),
+    ("villa _phase_correlate sign convention", check_villa_convention),
+    ("integration of analytic gradient fields", check_integration_analytic),
+    ("CRLB: two-layer stack equals pair formula", check_crlb_consistency),
+    ("cubic patch resampler vs scipy spline shift", check_cubic_resampler),
 ]

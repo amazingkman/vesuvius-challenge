@@ -1,0 +1,200 @@
+{
+  "finished_at": "2026-11-01T19:09:14+00:00",
+  "image_digest": null,
+  "outputs": [],
+  "params": {
+    "theta_deg": 5.0,
+    "thickness": 40
+  },
+  "partial": false,
+  "repo_commit": "9eb802a79fc187d1b1e7caa5e879d434c0c1728a",
+  "reproduce": "uv run vch",
+  "results": {
+    "rows": [
+      {
+        "estimator": "pc",
+        "fibre_to_tilt_deg": 0.0,
+        "gain": 1.0268443283893196,
+        "render_order": 1,
+        "wavelength_px": 8.0
+      },
+      {
+        "estimator": "lk",
+        "fibre_to_tilt_deg": 0.0,
+        "gain": 1.032046627529005,
+        "render_order": 1,
+        "wavelength_px": 8.0
+      },
+      {
+        "estimator": "pc",
+        "fibre_to_tilt_deg": 0.0,
+        "gain": 0.9730944900916441,
+        "render_order": 1,
+        "wavelength_px": 16.0
+      },
+      {
+        "estimator": "lk",
+        "fibre_to_tilt_deg": 0.0,
+        "gain": 1.0091565206936937,
+        "render_order": 1,
+        "wavelength_px": 16.0
+      },
+      {
+        "estimator": "pc",
+        "fibre_to_tilt_deg": 0.0,
+        "gain": 1.029850201838909,
+        "render_order": 3,
+        "wavelength_px": 8.0
+      },
+      {
+        "estimator": "lk",
+        "fibre_to_tilt_deg": 0.0,
+        "gain": 1.0347428289849312,
+        "render_order": 3,
+        "wavelength_px": 8.0
+      },
+      {
+        "estimator": "pc",
+        "fibre_to_tilt_deg": 0.0,
+        "gain": 0.9736486431184276,
+        "render_order": 3,
+        "wavelength_px": 16.0
+      },
+      {
+        "estimator": "lk",
+        "fibre_to_tilt_deg": 0.0,
+        "gain": 1.009399996027379,
+        "render_order": 3,
+        "wavelength_px": 16.0
+      },
+      {
+        "estimator": "pc",
+        "fibre_to_tilt_deg": 45.0,
+        "gain": 1.0895347766446102,
+        "render_order": 1,
+        "wavelength_px": 8.0
+      },
+      {
+        "estimator": "lk",
+        "fibre_to_tilt_deg": 45.0,
+        "gain": 1.0968891363219953,
+        "render_order": 1,
+        "wavelength_px": 8.0
+      },
+      {
+        "estimator": "pc",
+        "fibre_to_tilt_deg": 45.0,
+        "gain": 1.0123888881060523,
+        "render_order": 1,
+        "wavelength_px": 16.0
+      },
+      {
+        "estimator": "lk",
+        "fibre_to_tilt_deg": 45.0,
+        "gain": 1.0280909620874596,
+        "render_order": 1,
+        "wavelength_px": 16.0
+      },
+      {
+        "estimator": "pc",
+        "fibre_to_tilt_deg": 45.0,
+        "gain": 1.096738190274466,
+        "render_order": 3,
+        "wavelength_px": 8.0
+      },
+      {
+        "estimator": "lk",
+        "fibre_to_tilt_deg": 45.0,
+        "gain": 1.1015040993716223,
+        "render_order": 3,
+        "wavelength_px": 8.0
+      },
+      {
+        "estimator": "pc",
+        "fibre_to_tilt_deg": 45.0,
+        "gain": 1.0124666804847426,
+        "render_order": 3,
+        "wavelength_px": 16.0
+      },
+      {
+        "estimator": "lk",
+        "fibre_to_tilt_deg": 45.0,
+        "gain": 1.0283835451243448,
+        "render_order": 3,
+        "wavelength_px": 16.0
+      },
+      {
+        "estimator": "pc",
+        "fibre_to_tilt_deg": 90.0,
+        "gain": 1.099815193637849,
+        "render_order": 1,
+        "wavelength_px": 8.0
+      },
+      {
+        "estimator": "lk",
+        "fibre_to_tilt_deg": 90.0,
+        "gain": 1.1039330996362828,
+        "render_order": 1,
+        "wavelength_px": 8.0
+      },
+      {
+        "estimator": "pc",
+        "fibre_to_tilt_deg": 90.0,
+        "gain": 1.0262765920719887,
+        "render_order": 1,
+        "wavelength_px": 16.0
+      },
+      {
+        "estimator": "lk",
+        "fibre_to_tilt_deg": 90.0,
+        "gain": 1.0288507678080538,
+        "render_order": 1,
+        "wavelength_px": 16.0
+      },
+      {
+        "estimator": "pc",
+        "fibre_to_tilt_deg": 90.0,
+        "gain": 1.1031691986565377,
+        "render_order": 3,
+        "wavelength_px": 8.0
+      },
+      {
+        "estimator": "lk",
+        "fibre_to_tilt_deg": 90.0,
+        "gain": 1.1076618352344698,
+        "render_order": 3,
+        "wavelength_px": 8.0
+      },
+      {
+        "estimator": "pc",
+        "fibre_to_tilt_deg": 90.0,
+        "gain": 1.0265828720556183,
+        "render_order": 3,
+        "wavelength_px": 16.0
+      },
+      {
+        "estimator": "lk",
+        "fibre_to_tilt_deg": 90.0,
+        "gain": 1.0291657683212212,
+        "render_order": 3,
+        "wavelength_px": 16.0
+      }
+    ]
+  },
+  "seed": 31,
+  "source_sha256": "968f44bf434bd400d500b52194a2b9f079c949a2fb4057b23df8ceb812ee2583",
+  "stage": "wo002-diagnose-overshoot",
+  "started_at": "2026-11-01T19:02:44+00:00",
+  "versions": {
+    "numpy": "2.5.4",
+    "pyarrow": "26.0.0",
+    "python": "3.14.6",
+    "rich": "15.0.0",
+    "scipy": "1.18.1",
+    "tifffile": "2026.10.15",
+    "typer": "0.27.3",
+    "vesuvius": "0.2.4",
+    "zarr": "3.4.2"
+  },
+  "villa_sha": "d57c28ebee8776b618f9851c2289cc407ea99dd4"
+}

@@ -16,7 +16,7 @@ REPO = Path(__file__).parent.parent
 PIN = "d57c28ebee8776b618f9851c2289cc407ea99dd4"
 
 
-@pytest.mark.parametrize("command", ["survey", "fetch", "render", "verify-io", "selftest"])
+@pytest.mark.parametrize("command", ["survey", "fetch", "render", "verify-io", "selftest", "synth"])
 def test_every_stage_has_help(command: str) -> None:
     assert CliRunner().invoke(cli.app, [command, "--help"]).exit_code == 0
 
