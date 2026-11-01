@@ -8,6 +8,20 @@ Each entry says **what** changed, **why**, and **what it builds on** (citation k
 ## [Unreleased]
 
 ### Added
+- 2026-11-01 — DR-009: outcome of an external derivation review of LPSF (Gemini), each item checked by the Planner. Adopted:
+  - exact tan θ geometry;
+  - metric correction;
+  - per-layer band-pass;
+  - consistency residual replacing curl as the step detector;
+  - window-averaged ground truth;
+  - an estimator benchmark against the Cramér–Rao bound;
+  - screened weighted integration;
+  - block bootstrap.
+  Planner additions:
+  - signed rather than magnitude regression;
+  - paired shifts in S1;
+  - baseline B4 (structure-tensor normal).
+  Rejected: the review's Catmull-Rom transfer-function numbers (about 4× overstated) and its curl-variance factor.
 - 2026-11-01 — Planner review of WO-001: DR-002 addendum (code-search result) and DR-008 (study data PHerc0139; Paris 4 and FASP `state.tif` excluded; no public review tags; the May 2026 image is the renderer of record; WO-003 redesigned in physical units; rules for the public repo; default branch `master`). Builds on: `villa_estimate_canvas_offset`, `villa_atlas_overlay`, `villa_issue2167`.
 - 2026-11-01 — `vch` CLI with `survey`, `fetch`, `render`, `verify-io` and `selftest`, at the python-lab-ux floor (banner, live progress, explanations, statistics, graceful Ctrl-C, summary, JSON run record). `vch render` runs `vc_render_tifxyz` in Podman by image digest. `verify-io` is an addition to the WO's list: objective 1 needs proof that the `vesuvius` read path and the renderer agree. Why: WO-001. Builds on: `villa`, `open_data_repo`, `scrollprize_data`.
 - 2026-11-01 — WO-001 reports in `reports/2026-11-wo001/`: `upstream-audit.md`, `data-survey.md`, `code-search-hits.tsv` (every hit at the pin, with a judgment) and survey tables for all 14 samples with segments. Manifests for four PHerc0139 segments in `manifests/`. Why: closes the primer section 8 gaps and supplies the DR-002 novelty search. Builds on: `villa`, `villa_estimate_canvas_offset`, `villa_atlas_overlay`.
@@ -26,6 +40,7 @@ Each entry says **what** changed, **why**, and **what it builds on** (citation k
   Why: the June documents contained material errors (see Changed). Builds on: `scrollprize_prizes`, `scrollprize_winners`, `scrollprize_open_problems`, `villa`.
 
 ### Changed
+- 2026-11-01 — WO-003 reissued as rev 3 (DR-009), before any real-data LPSF run: step-0 physical diagnostics and W_max; baseline B4; re-specified S1 to S3; a value claim requiring LPSF to beat or complement B4. WO-002 Addendum 2 (binding). `docs/method-lpsf.md` revised (exact geometry, metric, band-pass, estimator choice, consistency residual, failure modes, normal-field prior art).
 - 2026-11-01 — WO-003 reissued as rev 2, before any real-data LPSF run:
   - stack of 81 layers at step 1 (±96 µm), with a cost probe first;
   - sinusoidal corrugations replace global ramps; amplitudes in µm;

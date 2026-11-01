@@ -70,6 +70,38 @@ If WO-002 is already in progress, fold these in. They tighten the WO; they don't
 5. **Freeze the defaults.** Patch size, overlap and the in-sheet band rule are frozen when this WO merges. WO-003 uses them unchanged.
 6. **No render-derived images** in the repo (DR-008). Synthetic-only figures are fine.
 
+## Addendum 2 — 2026-11-01 (Planner, after external derivation review DR-009; binding)
+
+If work is in progress, fold these in, and say in the provenance log which already-built parts changed. Theory is in `docs/method-lpsf.md` (rev. 2026-11-01). Where it conflicts with §3–§4 above, this addendum wins.
+
+1. **Exact geometry.** Use s = Δd·tan θ·t, and s/Δd = ∇h with h measured along **n**. Apply the metric correction ∂ᵢh = (1/Δd)·g_ij·s^j, with g from the mesh grid. The synthetic harness must include a non-isometric (stretched) mesh case, with a test that integration with g is unbiased and integration without g is biased by ≈2ε.
+2. **Band-pass each layer in-plane before estimation.** Add a synthetic case where the sheet envelope varies across a tilted patch, and a test that the band-passed estimate is unbiased while the unfiltered one is not. The cut-offs are parameters, frozen at merge.
+3. **Two estimators, one benchmark.**
+   - (i) Phase correlation: the existing fast path, plus the skimage and villa `_phase_correlate` references.
+   - (ii) A multi-layer gradient estimator: symmetric Lucas–Kanade / 3D structure-tensor flow on band-passed layers, summing normal equations across in-sheet layers before solving, with an optional iterative refinement.
+   - Compute the **Cramér–Rao bound** for each synthetic configuration from the generator's known power spectrum and decorrelation, and report each estimator's efficiency, CRLB/variance, against θ, SNR and anisotropy. The default is whichever estimator is closer to the bound across the realistic configurations (Addendum 1, item 1). Ties go to phase correlation, which reuses the existing primitive (DR-003). Record the choice and the numbers.
+4. **Two-layer (recto/verso) texture mode** with orthogonal fibers at different depths. Report Σ per layer and summed, and check that summing information before inverting removes the 1-D aperture problem.
+5. **Integration:** a screened, anisotropically weighted least-squares solver with in-mask Neumann edges and a z* screening term. Frankot–Chellappa is a reference only.
+6. **Failure detection.**
+   - Implement the consistency residual r = ∇z* − g, where z* comes from the depth profile of band-passed variance × ρ.
+   - Replace the P4 acceptance test: step localization AUROC ≥ 0.9 at step amplitude ≥ 3 voxels **for ‖r‖**.
+   - Add a test that curl is about 0 along a straight step interior. Curl stays as a diagnostic; its null distribution comes from Monte Carlo on the actual patch layout, not from a formula.
+7. **In-sheet window rule (non-circular).**
+   - Per patch, find the dominant peak of E(k) = (band-passed variance × ρ)(k) × a Gaussian prior centred on k₀ (σ_prior = 20 layers).
+   - Aggregate over a contiguous window around that peak, with width ≤ W_max < wrap pitch.
+   - Add a synthetic neighbouring-wrap case at a 47-layer pitch, including touching sheets, and test that no neighbouring-wrap layers enter.
+   - W_max is a parameter; WO-003 step 0 fixes it from measured sheet thickness.
+8. **Validation hygiene.**
+   - All slope tests regress the **signed** component along the known tilt direction (or vector-regress), never |s|.
+   - Ground truth is window-averaged with the estimator's own spatial weighting.
+   - Add a test showing that regressing against the point slope of a short-wavelength sinusoid under-reads by about sinc(P/λ), so the harness itself demonstrates the trap.
+9. **Acceptance (replaces §4 P1/P2 and P4 items):**
+   - signed slope of (s·t)/Δd against window-averaged tan θ = 1 ± 0.05 for θ ≤ 20° in A1 mode at moderate SNR;
+   - pure offset gives |s| < 0.05 px;
+   - offset recovery RMSE ≤ 0.5 voxel as before;
+   - ‖r‖ step AUROC ≥ 0.9 at ≥ 3 voxels.
+   Report the **minimum detectable tilt** (Addendum 1, item 2) for the chosen estimator; WO-003 relies on it.
+
 ## 6. Provenance log (executor appends below)
 
 ---

@@ -1,6 +1,6 @@
-# WO-003 — Real-data validation: injected perturbations vs. baselines (rev 2)
+# WO-003 — Real-data validation: injected perturbations vs. baselines (rev 3)
 
-Executor: **VSCode**  Depends on: WO-001 (merged) and WO-002 (estimator, merged)  Status: **rev 2, issued 2026-11-01. Supersedes rev 1 (2026-10-31)** per DR-008. No LPSF output on real data existed when this revision was written. Thresholds below are pre-registered and are not changed after data is seen. If something cannot be run as written, stop and report; don't adapt.
+Executor: **VSCode**  Depends on: WO-001 (merged) and WO-002 (estimator, merged)  Status: **rev 3, issued 2026-11-01. Supersedes rev 2 (DR-008) and rev 1**, per DR-009 (external derivation review). No LPSF output on real data existed when this revision was written. Thresholds below are pre-registered and are not changed after data is seen. If something cannot be run as written, stop and report; don't adapt.
 
 ## 1. Objective
 
@@ -18,13 +18,17 @@ Find out whether LPSF recovers known, injected normal-offset errors on **real** 
 - **Scroll and volume:** PHerc0139, volume `20260102150214` (2.399 µm). Segments w043 `20260112000000`, w057 `20260127000000`, w044 `20260115000000`, w058 `20260210000000`. Native `-on-20260102150214` meshes only.
 - **Render:** `--num-slices 81 --slice-step 1 --scale 1 --group-idx 0`, giving k₀ = 40 and a ±40 voxel (±96 µm) stack.
 - **Crops:** 2048 × 2048 px (≈ 4.9 × 4.9 mm). Place them by a seeded random draw inside each mesh's valid area, rejecting any crop with less than 95% valid vertices. The seed and placements are recorded before rendering.
-- **Patch defaults:** whatever WO-002 chose and documented, frozen at its merged commit.
+- **Patch defaults, estimator, band-pass, integrator and in-sheet window rule:** whatever WO-002 chose and documented, frozen at its merged commit. The one exception is W_max, fixed in step 0.
 
 ## 4. Step 0 — cost probe (before any LPSF run on real data)
 
 1. **Choose the I/O path.** Render one crop of w057 by streaming, and the same crop by any faster path you choose (for example a local copy of the needed volume region). The faster path is accepted only if its 81 layers are byte-identical to the streamed render; otherwise use streaming.
 2. **Fix the crop count.** Using the measured time per render, set crops per segment, C, so that the whole render plan (original plus every perturbation, every crop, every segment) fits in **≤ 24 h wall-clock**, with C ≥ 2. If C ≥ 2 cannot fit, stop and report to the Planner.
-3. **Record before going on.** Log C, the timings and the placements in the provenance log. No LPSF numbers are computed in step 0.
+3. **Physical diagnostics on the original renders only**, no LPSF shifts:
+   - (a) depth profiles of mean intensity and band-passed variance, giving the measured **sheet thickness, gap and wrap pitch** per crop; set **W_max** = the median sheet thickness, capped at 0.8 × the median pitch;
+   - (b) the through-depth correlation r(d) for d = 1–3, in-sheet versus in-gap (void) layers, to separate the point-spread function from material structure (DR-009);
+   - (c) the fraction of gap-layer patches with ρ above the in-sheet 25th percentile, as a fixed-pattern artifact indicator.
+4. **Record before going on.** Log C, the timings, the placements, W_max and the diagnostics in the provenance log. No LPSF shift or offset numbers are computed in step 0.
 
 ## 5. Perturbations
 
@@ -43,29 +47,36 @@ Perturbations are applied to stored tifxyz vertices along **n**, using the VC3D 
 
 ## 6. Estimation and baselines (same renders for every method)
 
-- **LPSF.** **s**, ρ, Σ on adjacent pairs; ĥ by integration; curl map. Compute paired differences against the original.
+- **LPSF**, with the frozen WO-002 configuration: band-passed layers; **s**, ρ, Σ; metric-corrected gradient **g**; ĥ by the screened weighted solve; the consistency residual ‖∇z* − **g**‖; the curl map (diagnostic only). Compute paired differences against the original.
 - **B1, brightest-layer snap.** k* from the mean-intensity depth profile per patch, giving the offset (`offset_sweep` context).
 - **B2, `vc_objrefine` as a black box.**
   - Run it on the original and on each perturbed mesh with its **default** parameters from the image of record (record the JSON).
   - Its correction is the refined mesh minus the input mesh, along **n**, on the stored grid. The paired difference is compared with −h_inj.
   - If its output is not on the input grid, or it will not run on a crop, record B2 as "not comparable" with the reason. Do not tune its parameters.
+- **B4, structure-tensor normal.** Per patch, the tilt of the mesh normal relative to the sheet normal from the 3D structure tensor of the CT. Use `vesuvius.compute_st` if it runs on the crop region; otherwise a documented Gaussian-derivative structure tensor with scales chosen from step 0, frozen before LPSF runs. Integrate it with the same solver to get ĥ_B4.
 - **B3, TIFXYZ Doctor.** Run its normal-offset cue if it runs on these meshes (check the license first); otherwise record why not.
 - **Stratification.** Patch contrast (std) tertiles and structure-tensor coherence tertiles.
 
 ## 7. Pre-registered success criteria
 
-Bootstrap confidence intervals resample patches within crops within segments, with 2,000 resamples.
+**Resampling.** Spatial block bootstrap: 256 × 256 px blocks drawn with replacement within each segment (segments are fixed strata), 2,000 replicates. **Ground truth is always window-averaged** with the estimator's own spatial weighting, applied to the realized (metric-corrected) ∇h_inj on the pixel grid. Point slopes are never used.
 
-- **S1, tilt physics on real texture.** On the corrugation family, in patches above the 25th percentile of ρ and with local slope ≤ 12°:
-  - the regression slope of |**s**|/Δd on sin θ_local is 1 ± 0.2 at Δd = 1;
-  - *and* the Δd = 2 slope is within ±0.3 of the Δd = 1 slope (P1, by subsampling layers).
-- **S2, beats baselines on offset recovery.** On corrugations and bumps, the paired RMSE of ĥ versus h_inj is at least 20% lower than B1's, with a 95% CI on the difference that excludes 0. Report the same comparison against B2 and B3 where available; it is not gated.
-- **S3, detects failures.** For steps of 25 µm or more, step-line localization AUROC is ≥ 0.9 for the curl residual or |∇ĥ|, and not lower than B1, B2 or B3 where they are available.
+- **S1, tilt physics on real texture.** On the corrugation family, with paired shifts Δ**s** = **s**(perturbed) − **s**(original), metric-corrected, in patches above the 25th percentile of ρ with window-averaged tilt ≤ 12°:
+  - the regression slope of the **signed** component of Δ**g** along the window-averaged ∇h_inj direction, against |window-averaged ∇h_inj|, is 1 ± 0.2 at Δd = 1;
+  - *and* the Δd = 2 slope is within ±0.3 of the Δd = 1 slope (P1, by layer subsampling).
+- **S2, offset recovery against baselines.** On corrugations and bumps, the paired RMSE of ĥ against window-averaged h_inj is at least 20% lower than B1's, and the 95% CI on the difference excludes 0. **Report the same comparison against B4, B2 and B3.** Not gated, but it decides the value claim below.
+- **S3, failure detection.** Step-line labels:
+  - positive: patch centre within P/4 of the line;
+  - buffer, excluded: between P/4 and P;
+  - negative: at least P.
+  For steps ≥ 25 µm, AUROC ≥ 0.9 for the **consistency residual ‖∇z* − g‖**, and not lower than B1, B2, B3 or B4 (each with its own natural detector: |∇ĥ| for B1 and B4) where available. Also report partial AUROC at FPR ≤ 0.05.
 
 **Gate:**
-- S1 and S3 pass → BACKLOG "LPSF → `vc_objrefine` integration" and a progress-prize draft for Planner review.
-- S1 passes, S2 and S3 fail → write a negative-result report.
-- S1 fails → the model does not transfer to real texture; stop, and the Planner records it in decisions.md.
+- S1 and S3 pass → BACKLOG integration plus a progress-prize draft for Planner review.
+- S1 passes, S2 and S3 fail → negative-result report.
+- S1 fails → stop; Planner records it.
+
+**Value claim, also pre-registered.** LPSF is presented as a better tilt/offset signal only if its S2 RMSE beats B4's with a CI excluding 0. If B4 is as good or better, we test the **fusion** (both gradient fields in one weighted solve). LPSF is then presented as complementary only if the fusion beats B4 alone with a CI excluding 0. Otherwise the report says plainly that the structure-tensor normal already does this job.
 
 ## 8. Exploratory (not gated; label as exploratory in the report)
 
@@ -75,6 +86,7 @@ Bootstrap confidence intervals resample patches within crops within segments, wi
 
 ## 9. Deliverables
 
+- **Additional command** `vch diagnose` for step 0 (depth profiles, r(d), gap-layer check), at the same UX floor.
 - **Commands** `vch perturb` (tifxyz writer via `vesuvius.tifxyz.write_tifxyz`, plus the families above) and `vch validate`, which orchestrates render, S0, estimate, baselines and metrics. Both are resumable and at the python-lab-ux floor, with a live stats panel; long runs show the render queue ETA.
 - **Report** `reports/2026-11-wo003/report.md`, containing:
   - step 0 numbers;

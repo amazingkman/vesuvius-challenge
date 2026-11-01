@@ -111,3 +111,32 @@ The full-text search of villa at `d57c28e` judged all 2,483 hits (`reports/2026-
 7. **Default branch is `master`.** Docs updated.
 
 **Reversal.** If the Vesuvius Challenge grants written permission for Paris 4 QC analysis, item 2 can be revisited for a secondary analysis. If WO-003's step 0 cost probe shows the 81-layer design cannot fit the compute budget, the Planner re-issues WO-003 before any LPSF run on real data.
+
+---
+
+## DR-009 — 2026-11-01 — External derivation review of LPSF: what we adopt, what we reject
+
+**Context.** Kevin put nine physics, statistics and estimation questions about LPSF to Gemini (current flagship model). Every claim came back tagged as derived, established, estimate or unknown. The Planner checked the derivations by hand and the key numbers by script (Project note `notes/2026-11-01-gemini-review.md`). No real-data LPSF output exists yet, so changes to pre-registered criteria are still legitimate.
+
+**Adopted (each verified by the Planner):**
+1. **s = Δd·tan θ·t**, exactly, for planar mesh and sheet; **s/Δd = ∇h** exactly when h is measured along **n**. This replaces the first-order sin θ form.
+2. **Metric correction:** ∂ᵢh = (1/Δd)·g_ij·s^j. It prevents a ≈2ε error on stretched parameterizations.
+3. **In-plane band-pass on each layer** before estimation, because the thickness envelope slides about −Δd/tan θ per layer, the opposite direction to the texture.
+4. **Curl is not a step detector.** A straight step has a curl-free gradient along its interior. Replaced by the **consistency residual ∇z* − g** (sheet position versus tilt).
+5. **Validation ground truth must be window-averaged.** A 64-px patch attenuates a 0.3 mm sinusoid's slope to about 0.62. Regressing against the point slope would fail a correct estimator.
+6. **Estimator choice is an experiment, not an assumption.** Phase correlation versus a multi-layer gradient estimator (Lucas–Kanade / 3D structure-tensor flow), both benchmarked against the Cramér–Rao bound in WO-002.
+7. **Integration:** a screened, anisotropically weighted least-squares solve, with z* pinning low frequencies. Frankot–Chellappa is kept only as a reference.
+8. **Dependence-aware statistics:** spatial block bootstrap within segment strata; step-line labels with a buffer zone; partial AUROC reported.
+9. **Extra diagnostics:** gap-layer shift (fixed-pattern artifacts) and void-region correlation (PSF versus material).
+
+**Added by the Planner (missed by the review):**
+- **Never regress |s|.** Noise biases a magnitude upward. Use the signed component along the known tilt direction, or vector regression.
+- **Use paired shifts, Δs = s(perturbed) − s(original),** in S1. Otherwise the original mesh's own tilt errors contaminate the regression.
+- **Baseline B4:** tilt from the volume's 3D structure-tensor normal (`vesuvius.compute_st`) versus the mesh normal. It measures the same θ by a different physical route and is the strongest competitor (Lasagna already optimizes against normal volumes). LPSF's value claim now requires beating B4 or adding to it.
+
+**Rejected or corrected (verified wrong):**
+- **Catmull-Rom transfer function:** the review's closed form is incorrect, and its table overstates errors about fourfold. By direct simulation, the RMS error of the realized sinusoid is 1.9% / 0.17% / 0.02% in h and 7.9% / 1.9% / 0.5% in slope at λ = 125 / 250 / 500 voxels. The fundamental amplitude is 0.988 / 0.999 / 1.000. The review's own snippet was not run.
+- **Curl null variance with 50% overlap:** under the review's own correlation model, it is 0.75·Tr(Σ), not 0.375·Tr(Σ). Moot anyway: the null comes from Monte Carlo.
+- **Papyrus microstructure figures** (Q4: carbonized sheet 50–90 µm, layer 25–45 µm, cell sizes): several citations are garbled or uncertain. Not adopted as facts. They are treated as hypotheses, and WO-003 step 0 measures sheet thickness and gap on our own renders instead.
+
+**Consequences.** WO-002 gets a second binding addendum. WO-003 is reissued as rev 3. `method-lpsf.md` is revised.
