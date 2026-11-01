@@ -24,7 +24,8 @@ Theory, assumptions, predictions and failure modes: [`docs/method-lpsf.md`](docs
 ```bash
 uv run vch selftest                                         # fast paths vs skimage, villa, analytic references
 uv run vch synth run --config configs/synth/wo002.toml      # ~1,200 synthetic cases, CPU only
-uv run vch synth report runs/synth/wo002-<timestamp>        # figures + summary.md from the saved run
+uv run vch synth run --config configs/synth/wo002-fibre.toml  # fibre orientation vs tilt, 252 cases
+uv run vch synth report runs/synth/wo002-<timestamp> [runs/synth/wo002-fibre-<timestamp>]  # figures + summary.md
 ```
 
 Results, the failure envelope and the frozen defaults are in [`reports/2026-11-wo002/report.md`](reports/2026-11-wo002/report.md). Nothing here has touched real scroll data yet; that is WO-003.
@@ -112,4 +113,4 @@ Scroll data is never committed or redistributed. Scrolls 1â€“4 and Fragments 1â€
 
 ## Status
 
-See `CHANGELOG.md` and `planning/`. As of 2026-11-01: WO-001 is complete and reviewed (DR-008). WO-002 (with addendum), WO-003 rev 2 and WO-004 are issued. Study data is PHerc0139; Paris 4 is excluded until 2027-06-25.
+See `CHANGELOG.md` and `planning/`. As of 2026-11-01: WO-001 is complete and reviewed (DR-008). WO-002 (with addenda 1 and 2) is implemented, with its report in `reports/2026-11-wo002/report.md`; it awaits Planner review. The pre-registered P1/P2 slope criterion failed for a geometric reason, and realistic-decorrelation mode exposed an orientation-dependent bias that matters for WO-003. WO-003 rev 3 and WO-004 are issued. Study data is PHerc0139; Paris 4 is excluded until 2027-06-25.

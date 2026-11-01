@@ -1,0 +1,124 @@
+{
+  "finished_at": "2026-11-01T20:22:20+00:00",
+  "image_digest": null,
+  "outputs": [
+    "reports/2026-11-wo002/generated/fig1-p1p2-slope.png",
+    "reports/2026-11-wo002/generated/fig2-min-detectable-tilt.png",
+    "reports/2026-11-wo002/generated/fig3-offset-recovery.png",
+    "reports/2026-11-wo002/generated/fig4-step-detection.png",
+    "reports/2026-11-wo002/generated/fig5-failure-envelope.png",
+    "reports/2026-11-wo002/generated/fig6-patch-size.png",
+    "reports/2026-11-wo002/generated/fig7-orientation.png",
+    "reports/2026-11-wo002/generated/summary.md",
+    "reports/2026-11-wo002/generated/tables.json"
+  ],
+  "params": {
+    "run_dirs": [
+      "reports/2026-11-wo002/sweeps/wo002-20261101T191224",
+      "reports/2026-11-wo002/sweeps/wo002-fibre-20261101T195301"
+    ]
+  },
+  "partial": false,
+  "repo_commit": "c515358bf39c5f95fc098220c00d544c216e9628",
+  "reproduce": "uv run vch synth report reports/2026-11-wo002/sweeps/wo002-20261101T191224 reports/2026-11-wo002/sweeps/wo002-fibre-20261101T195301 --out reports/2026-11-wo002/generated",
+  "results": {
+    "verdicts": {
+      "A1 slope at \u03b8 = 20\u00b0, P = 32 (SNR 6)": {
+        "detail": "ratio lk: -0.875, pc: -0.489; patch depth span P\u00b7tan 20\u00b0 = 11.6 voxels vs sheet thickness 20",
+        "verdict": "FAIL"
+      },
+      "A1 slope at \u03b8 = 20\u00b0, P = 64 (SNR 6)": {
+        "detail": "ratio lk: 0.035, pc: 0.168; patch depth span P\u00b7tan 20\u00b0 = 23.3 voxels vs sheet thickness 20",
+        "verdict": "FAIL"
+      },
+      "P1/P2 slope, A1, SNR 6, lk": {
+        "detail": "slopes by \u0394d: 0.5: 0.291, 1: 0.084, 2: 0.363 (need 1 \u00b1 0.05)",
+        "verdict": "FAIL"
+      },
+      "P1/P2 slope, A1, SNR 6, pc": {
+        "detail": "slopes by \u0394d: 0.5: 0.592, 1: 0.098, 2: 0.528 (need 1 \u00b1 0.05)",
+        "verdict": "FAIL"
+      },
+      "P4 ||r|| AUROC >= 0.9, a1, lk": {
+        "detail": "lowest AUROC at amp >= 3: 1.000",
+        "verdict": "PASS"
+      },
+      "P4 ||r|| AUROC >= 0.9, a1, pc": {
+        "detail": "lowest AUROC at amp >= 3: 1.000",
+        "verdict": "PASS"
+      },
+      "P4 ||r|| AUROC >= 0.9, realistic, lk": {
+        "detail": "lowest AUROC at amp >= 3: 0.534",
+        "verdict": "FAIL"
+      },
+      "P4 ||r|| AUROC >= 0.9, realistic, pc": {
+        "detail": "lowest AUROC at amp >= 3: 0.620",
+        "verdict": "FAIL"
+      },
+      "Sigma calibrated, a1, lk": {
+        "detail": "coverage 0.642 (need 0.90-0.98), confident wrong sign 0.116 (need <= 0.025), 5840 patches",
+        "verdict": "FAIL"
+      },
+      "Sigma calibrated, a1, pc": {
+        "detail": "coverage 0.610 (need 0.90-0.98), confident wrong sign 0.081 (need <= 0.025), 6032 patches",
+        "verdict": "FAIL"
+      },
+      "Sigma calibrated, realistic, lk": {
+        "detail": "coverage 0.165 (need 0.90-0.98), confident wrong sign 0.489 (need <= 0.025), 5455 patches",
+        "verdict": "FAIL"
+      },
+      "Sigma calibrated, realistic, pc": {
+        "detail": "coverage 0.138 (need 0.90-0.98), confident wrong sign 0.482 (need <= 0.025), 5648 patches",
+        "verdict": "FAIL"
+      },
+      "Sigma calibrated, two_layer, lk": {
+        "detail": "coverage 0.578 (need 0.90-0.98), confident wrong sign 0.001 (need <= 0.025), 2640 patches",
+        "verdict": "FAIL"
+      },
+      "Sigma calibrated, two_layer, pc": {
+        "detail": "coverage 0.432 (need 0.90-0.98), confident wrong sign 0.010 (need <= 0.025), 2640 patches",
+        "verdict": "FAIL"
+      },
+      "offset recovery RMSE <= 0.5, a1, lk": {
+        "detail": "worst RMSE 0.049 voxels (amp >= 2, width >= 4 patches)",
+        "verdict": "PASS"
+      },
+      "offset recovery RMSE <= 0.5, a1, pc": {
+        "detail": "worst RMSE 0.061 voxels (amp >= 2, width >= 4 patches)",
+        "verdict": "PASS"
+      },
+      "offset recovery RMSE <= 0.5, realistic, lk": {
+        "detail": "worst RMSE 1.865 voxels (amp >= 2, width >= 4 patches)",
+        "verdict": "FAIL"
+      },
+      "offset recovery RMSE <= 0.5, realistic, pc": {
+        "detail": "worst RMSE 1.994 voxels (amp >= 2, width >= 4 patches)",
+        "verdict": "FAIL"
+      },
+      "pure offset |s| < 0.05 px, a1": {
+        "detail": "max per-patch |s| over offsets -10..10: 0.0058 px",
+        "verdict": "PASS"
+      },
+      "pure offset |s| < 0.05 px, realistic": {
+        "detail": "max per-patch |s| over offsets -10..10: 0.2771 px",
+        "verdict": "FAIL"
+      }
+    }
+  },
+  "seed": null,
+  "source_sha256": "9bdc19a6204a7d3d49e82e588ddb12bbeae906e2350f51bb87e356b7b36052fd",
+  "stage": "synth-report",
+  "started_at": "2026-11-01T20:22:14+00:00",
+  "versions": {
+    "numpy": "2.5.4",
+    "pyarrow": "26.0.0",
+    "python": "3.14.6",
+    "rich": "15.0.0",
+    "scipy": "1.18.1",
+    "tifffile": "2026.10.15",
+    "typer": "0.27.3",
+    "vesuvius": "0.2.4",
+    "zarr": "3.4.2"
+  },
+  "villa_sha": "d57c28ebee8776b618f9851c2289cc407ea99dd4"
+}

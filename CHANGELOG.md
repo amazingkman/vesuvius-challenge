@@ -17,6 +17,12 @@ Each entry says **what** changed, **why**, and **what it builds on** (citation k
   - `tests/test_lpsf.py`, `tests/test_synthetic.py` (P1–P6, degenerate inputs, renderer known-answer tests, sign convention, metric, band-pass, sinusoid trap).
   - CI: `.github/workflows/ci.yml` (uv sync --locked, ruff check and format, pytest, selftest; Python 3.14).
   Why: WO-002. Builds on: `foroosh2002`, `guizar2008`, `frankot1988`, `lucas1981`, `robinson2004`, `keys1981`, `skimage_pcc`, `villa_estimate_canvas_offset`.
+- 2026-11-01 — WO-002 report `reports/2026-11-wo002/report.md`. It is built from saved sweeps (`sweeps/`, 1,460 synthetic cases) and two diagnosis scripts (`scripts/wo002_diagnose_*.py`), with a Σ-calibration acceptance criterion added on Kevin's instruction and a fibre-orientation sweep. Results:
+  - P1/P2 pre-registered slope criterion: **failed**, for a geometric reason at 20° (P·tan θ against effective sheet thickness);
+  - A1 offset recovery and step detection: passed;
+  - realistic-decorrelation mode: orientation-dependent, sign-reversed slopes (diagnosed);
+  - Σ: not calibrated.
+  Why: WO-002 §3.6 and addenda. Builds on: `robinson2004`.
 - 2026-11-01 — DR-009: outcome of an external derivation review of LPSF (Gemini), each item checked by the Planner. Adopted:
   - exact tan θ geometry;
   - metric correction;
@@ -49,6 +55,8 @@ Each entry says **what** changed, **why**, and **what it builds on** (citation k
   Why: the June documents contained material errors (see Changed). Builds on: `scrollprize_prizes`, `scrollprize_winners`, `scrollprize_open_problems`, `villa`.
 
 ### Changed
+- 2026-11-01 — Patch resampling in LPSF refinement now uses prefiltered cubic B-splines instead of Keys cubic convolution. Keys' phase error biased refined slopes by +10% for 8-px texture across the tilt (`reports/2026-11-wo002/diagnosis-overshoot-keys-resampler.json`); every reported run uses the fixed code. Builds on: `keys1981`.
+- 2026-11-01 — `vch synth run` survives a killed worker: it rebuilds the pool, retries in-flight cases once, checkpoints Parquet every 50 cases and always writes what finished. The synthetic volume generator works in float32 slabs. Why: the first full sweep was killed (most likely out of memory) and lost every result.
 - 2026-11-01 — WO-003 reissued as rev 3 (DR-009), before any real-data LPSF run: step-0 physical diagnostics and W_max; baseline B4; re-specified S1 to S3; a value claim requiring LPSF to beat or complement B4. WO-002 Addendum 2 (binding). `docs/method-lpsf.md` revised (exact geometry, metric, band-pass, estimator choice, consistency residual, failure modes, normal-field prior art).
 - 2026-11-01 — WO-003 reissued as rev 2, before any real-data LPSF run:
   - stack of 81 layers at step 1 (±96 µm), with a cost probe first;
