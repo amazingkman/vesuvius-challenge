@@ -1,3 +1,0 @@
------BEGIN RSA PRIVATE KEY-----
-this-is-a-planted-test-file-and-not-a-real-key
------END RSA PRIVATE KEY-----

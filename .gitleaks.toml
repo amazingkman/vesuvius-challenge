@@ -23,3 +23,11 @@ commits = [
     "a70cd87e8090b67752a5c2859400ae290c0fd595",  # Workstation hostname in docs. No rule here matches it; listed for the record
 ]
 paths = ['''^tests/test_security\.py$''']
+
+# The WO-005 acceptance check planted fake files in this one commit and reverted them next. The
+# key header and home path are fake. The default private-key rule needs covering too, so this
+# entry names both rules rather than using a rule-level allow-list.
+[[allowlists]]
+description = "WO-005 acceptance check: planted fake files, reverted in the next commit"
+targetRules = ["private-key", "absolute-home-path"]
+commits = ["0415699f29dd3332c85f68eaeaa5d7d7c7a2f874"]

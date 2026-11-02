@@ -1,1 +1,0 @@
-mount /home/example-planted/project/run.json
