@@ -239,13 +239,13 @@ def processed_noise(
     """
     length = paganin_length_voxels() if length is None else length
     white = rng.standard_normal(shape, dtype=np.float32)
-    spectrum = sfft.rfftn(white, workers=-1)
+    spectrum = sfft.rfftn(white, workers=1)  # sweeps run one case per process
     del white
     grids = [2 * np.pi * sfft.fftfreq(n).astype(np.float32) for n in shape[:-1]]
     grids.append(2 * np.pi * sfft.rfftfreq(shape[-1]).astype(np.float32))
     k2 = grids[0][:, None, None] ** 2 + grids[1][None, :, None] ** 2 + grids[2][None, None, :] ** 2
     spectrum *= processing_transfer(k2, length, amount, sigma).astype(np.float32)
-    out = sfft.irfftn(spectrum, s=shape, workers=-1)
+    out = sfft.irfftn(spectrum, s=shape, workers=1)
     out -= out.mean()
     return (out / max(float(out.std()), 1e-12)).astype(np.float32)
 
