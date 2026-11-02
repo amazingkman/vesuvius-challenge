@@ -495,7 +495,11 @@ def scan() -> None:
     """Check tracked files for machine identity, key headers and unregistered images."""
     output = Path("runs") / "scan.run.json"
     checks = [
-        ("Identity and paths", scan_identity, "Looks for home paths, this machine's names and key headers."),
+        (
+            "Identity and paths",
+            scan_identity,
+            "Looks for home, root and temp paths, this machine's names and key headers.",
+        ),
         ("Figure register", scan_figures, "Every tracked image must be listed in FIGURES.md, and none render-derived."),
     ]
     ui.banner(

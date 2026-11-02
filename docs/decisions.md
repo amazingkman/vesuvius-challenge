@@ -230,3 +230,7 @@ The full-text search of villa at `d57c28e` judged all 2,483 hits (`reports/2026-
 - **WO-006 addendum:** a synthetic "processed-noise" mode. White noise passes through the documented Paganin filter (δ/β = 1000, z = 0.22 m, 78 keV) and the unsharp mask (c = 4, σ = 1.2 px). Report its effect on gain and Σ calibration alongside the realistic mode.
 - **Method doc:** h is defined relative to the surface the mesh is meant to trace (recto), so an unbiased mesh has z* offset from k₀ by about half the sheet thickness. That offset is expected, not an error. The paired design is unaffected.
 - **Backlog:** if approval masks are published, approved-against-unapproved regions become the tag-based secondary validation dropped in DR-008, reinstated as exploratory.
+
+---
+
+DR-010 addendum — 2026-11-01. Item 4’s ‘private commit email’ is superseded: the owner’s email stays public by choice so researchers can reach him (docs/security.md R5). 2FA is on for every account. No other change.
