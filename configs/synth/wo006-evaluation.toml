@@ -1,0 +1,25 @@
+# WO-006 evaluation split: run only after kappa and f are frozen in lpsf.Params. Run: uv run vch synth run --config configs/synth/wo006-evaluation.toml
+# fibre_tilt_deg is the angle between the fibres and the tilt in the mesh frame. Every case runs the full estimate, the
+# directional estimate and gain_map on one stack. seed_id is the split: 0-4 calibrate, 5-9 evaluate (WO-006 item 1).
+# Grid from WO-006 item 4. corr_length is the texture's L; WO-001's r(d) fits 4.34 at SNR 6, written 4.3 in the WO.
+name = "wo006-evaluation"
+seed = 2029
+
+[[sweep]]
+experiment = "orientation"
+estimator = ["pc", "lk"]
+texture = ["a1", "two_layer"]
+fibre_tilt_deg = [0, 15, 30, 45, 60, 75, 90]
+theta_deg = [1, 2, 5, 10]
+snr = 6
+seed_id = [5, 6, 7, 8, 9]
+
+[[sweep]]
+experiment = "orientation"
+estimator = ["pc", "lk"]
+texture = "realistic"
+corr_length = [2.0, 4.3, 8.0]
+fibre_tilt_deg = [0, 15, 30, 45, 60, 75, 90]
+theta_deg = [1, 2, 5, 10]
+snr = 6
+seed_id = [5, 6, 7, 8, 9]

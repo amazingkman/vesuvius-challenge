@@ -28,6 +28,20 @@ uv run vch synth run --config configs/synth/wo002-fibre.toml  # fibre orientatio
 uv run vch synth report runs/synth/wo002-<timestamp> [runs/synth/wo002-fibre-<timestamp>]  # figures + summary.md
 ```
 
+**Uncertainty and diagnostics (WO-006, synthetic only):**
+
+- `lpsf.calibrate` and `Params.sigma_inflation` / `sigma_floor`: Σ calibrated as `κ²σ² + (f|g|)²`, frozen at κ = 2.95, f = 0. Integration uses calibrated Σ. **It is reliable only where texture does not decorrelate through the sheet:** coverage is 0.94–1.00 in A1 and two-layer, and 0.35–0.44 in the realistic mode.
+- `lpsf.gain_map`: per-patch L, ℓ_along, ℓ_across, fibre angle and predicted decorrelation gain, flagged where the first-order model cannot be trusted. It needs a stack with void layers (for example `num_slices = 41`) to tell noise from material. It is a diagnostic and corrects nothing.
+- `Params(directional=True)`: keeps across-fibre information and reports the along-fibre direction as unobserved. Off by default until the WO-003 pilot decides. Slopes hold across orientations; Σ still fails at small tilts.
+- `synthetic`: `Sheet(noise="processed")` adds Paganin and unsharp-mask noise fixed in the volume.
+
+```bash
+uv run vch synth calibrate runs/synth/<calibration-run> --out reports/2026-11-wo006/calibration.json
+uv run vch synth wo006-report <calibration.json> <evaluation-run> <processed-run> --out <dir>
+```
+
+All three WO-006 criteria failed as pre-registered; see [`reports/2026-11-wo006/report.md`](reports/2026-11-wo006/report.md).
+
 Results, the failure envelope and the frozen defaults are in [`reports/2026-11-wo002/report.md`](reports/2026-11-wo002/report.md). Nothing here has touched real scroll data yet; that is WO-003.
 
 ## Built on (we use these tools rather than re-implementing them)

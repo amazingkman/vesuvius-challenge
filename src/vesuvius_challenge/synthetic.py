@@ -28,13 +28,24 @@ from dataclasses import asdict, dataclass, field, replace
 from typing import Literal
 
 import numpy as np
+from scipy import fft as sfft
 from scipy import ndimage
 
 TextureMode = Literal["a1", "two_layer", "realistic"]
+NoiseMode = Literal["white", "processed"]
 
 # WO-001 (reports/2026-11-wo001/data-survey.md §9): Pearson r between the on-surface layer and samples d voxels
 # along the normal, PHerc0139 at 2.399 µm, four segments.
 MEASURED_R = {1: 0.93, 2: 0.78, 3: 0.60}
+
+# BM18 reconstruction protocol [angelotti2026, Methods, "Phase retrieval and contrast restoration"; DR-013].
+PAGANIN_DELTA_BETA = 1000.0
+PAGANIN_DISTANCE_M = 0.22
+PAGANIN_ENERGY_KEV = 78.0
+VOXEL_UM = 2.4
+UNSHARP_AMOUNT = 4.0
+UNSHARP_SIGMA = 1.2
+HC_KEV_M = 1.2398419843320026e-9  # h c, keV metres
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -169,6 +180,8 @@ class Sheet:
     Intensity is ``background + amplitude * w(z) * (1 + contrast * tau)`` per sheet, plus noise. ``snr`` is the
     texture standard deviation at the sheet centre (``amplitude * contrast``) over the Gaussian noise standard
     deviation. ``photons``, if set, applies Poisson noise at that many counts per unit intensity first.
+    ``noise`` is ``white`` (independent per voxel) or ``processed`` (:func:`processed_noise`); both are fixed in volume
+    coordinates, and for both ``snr`` sets the standard deviation in the volume.
     ``gap``, if set, adds a second parallel sheet on the ``+n`` side with that many voxels between the two envelopes'
     half-maximum edges, carrying independent texture (P6).
     """
@@ -181,6 +194,7 @@ class Sheet:
     snr: float | None = 6.0
     photons: float | None = None
     gap: float | None = None
+    noise: NoiseMode = "white"
 
 
 def envelope(distance: np.ndarray, sheet: Sheet) -> np.ndarray:
@@ -194,6 +208,46 @@ def sheet_centres(z_sheet: float, sheet: Sheet) -> list[float]:
     if sheet.gap is not None:
         centres.append(z_sheet + sheet.thickness + sheet.gap)
     return centres
+
+
+def paganin_length_voxels(
+    delta_beta: float = PAGANIN_DELTA_BETA,
+    distance_m: float = PAGANIN_DISTANCE_M,
+    energy_kev: float = PAGANIN_ENERGY_KEV,
+    voxel_um: float = VOXEL_UM,
+) -> float:
+    """The Paganin filter's characteristic length ``sqrt(z lambda (delta / beta) / (4 pi))``, in voxels (WO-006)."""
+    wavelength = HC_KEV_M / energy_kev
+    return float(np.sqrt(distance_m * wavelength * delta_beta / (4 * np.pi)) / (voxel_um * 1e-6))
+
+
+def processing_transfer(k2: np.ndarray, length: float, amount: float, sigma: float) -> np.ndarray:
+    """Paganin low-pass ``1 / (1 + l^2 k^2)`` times unsharp mask ``(1 + c) - c exp(-sigma^2 k^2 / 2)``, in k^2."""
+    return ((1 + amount) - amount * np.exp(-0.5 * sigma**2 * k2)) / (1 + length**2 * k2)
+
+
+def processed_noise(
+    shape: tuple[int, int, int],
+    rng: np.random.Generator,
+    length: float | None = None,
+    amount: float = UNSHARP_AMOUNT,
+    sigma: float = UNSHARP_SIGMA,
+) -> np.ndarray:
+    """White noise through the 3-D Paganin filter and then the unsharp mask (WO-006 addendum 1). Unit variance.
+
+    The array is the volume, so the noise is fixed in volume coordinates and does not follow the sheet.
+    """
+    length = paganin_length_voxels() if length is None else length
+    white = rng.standard_normal(shape, dtype=np.float32)
+    spectrum = sfft.rfftn(white, workers=1)  # sweeps run one case per process
+    del white
+    grids = [2 * np.pi * sfft.fftfreq(n).astype(np.float32) for n in shape[:-1]]
+    grids.append(2 * np.pi * sfft.rfftfreq(shape[-1]).astype(np.float32))
+    k2 = grids[0][:, None, None] ** 2 + grids[1][None, :, None] ** 2 + grids[2][None, None, :] ** 2
+    spectrum *= processing_transfer(k2, length, amount, sigma).astype(np.float32)
+    out = sfft.irfftn(spectrum, s=shape, workers=1)
+    out -= out.mean()
+    return (out / max(float(out.std()), 1e-12)).astype(np.float32)
 
 
 def make_volume(
@@ -215,8 +269,11 @@ def make_volume(
         volume = (rng.poisson(np.clip(volume, 0, None) * sheet.photons) / sheet.photons).astype(np.float32)
     if sheet.snr is not None:
         sigma = np.float32(sheet.amplitude * sheet.contrast / sheet.snr)
-        for z in range(shape[0]):  # slab by slab in float32 keeps the peak memory near one volume
-            volume[z] += sigma * rng.standard_normal(shape[1:], dtype=np.float32)
+        if sheet.noise == "processed":
+            volume += sigma * processed_noise(shape, rng)
+        else:
+            for z in range(shape[0]):  # slab by slab in float32 keeps the peak memory near one volume
+                volume[z] += sigma * rng.standard_normal(shape[1:], dtype=np.float32)
     return volume.astype(np.float32)
 
 

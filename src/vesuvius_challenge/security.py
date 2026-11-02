@@ -28,6 +28,8 @@ GENERIC_NAMES = {"admin", "ci", "github", "localhost", "root", "runner", "ubuntu
 # does not need to be on the allow-list.
 ABSOLUTE_PATH = re.compile(r"(?<![\w.~>:/$)\]-])/(?!data(?:[/\s\"':]|$))[\w.-]+|\b[A-Za-z]:\\|/(?:hom[e]|User[s])/")
 HOME_PATH = re.compile(rb"/hom[e]/|/User[s]/|C:\\+User[s]")
+# Cloud sessions run as root. The lookbehind keeps relative paths such as `data/tmp/x` legal.
+SYSTEM_PATH = re.compile(rb"(?<![\w.~>-])/(?:roo[t]|tm[p])/")
 PRIVATE_KEY = re.compile(rb"-----BEGIN [A-Z0-9 ]*PRIVATE KE[Y]")
 
 # Only these exact files may name the patterns, because they define the rules.
@@ -141,7 +143,11 @@ def tracked_files(root: Path) -> list[str]:
 
 
 def identity_rules(user: str, host: str) -> list[tuple[str, re.Pattern[bytes]]]:
-    rules = [("absolute home path", HOME_PATH), ("private key header", PRIVATE_KEY)]
+    rules = [
+        ("absolute home path", HOME_PATH),
+        ("absolute system path", SYSTEM_PATH),
+        ("private key header", PRIVATE_KEY),
+    ]
     for label, name in (("username", user), ("hostname", host)):
         if _identifying(name):
             rules.append((label, re.compile(_word(name).encode(), re.IGNORECASE)))

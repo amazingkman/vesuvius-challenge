@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import time
 import tomllib
@@ -33,6 +34,7 @@ WHY = {
     "layers": "Two sheets: correlation in gaps and across interfaces (P6); the window must not reach the next wrap.",
     "aperture": "Oriented fibres: predicted Sigma vs empirical scatter (P5), per layer and summed.",
     "crosscheck": "Fast path vs skimage vs villa _phase_correlate on exactly shifted patches.",
+    "orientation": "Fibres against tilt: full and directional estimates and the predicted decorrelation gain.",
 }
 
 
@@ -212,6 +214,92 @@ def run(
     )
     if errors:
         raise typer.Exit(1)
+
+
+@synth_app.command("calibrate")
+def calibrate(
+    run_dir: Annotated[Path, typer.Argument(help="The calibration split's run directory.", exists=True)],
+    out: Annotated[Path, typer.Option(help="Where to write the fit.")] = Path("runs") / "calibration.json",
+) -> None:
+    """Fit Sigma's kappa and f on a saved calibration split (WO-006 item 1). It reads no evaluation seeds."""
+    from vesuvius_challenge import wo006_report
+
+    ui.banner(
+        "vch synth calibrate",
+        "Fits one inflation kappa and one relative floor f so that Sigma's intervals cover the truth. It reads a saved "
+        "run only, and it refuses seeds outside the calibration split.",
+        {"run": run_dir.name},
+        out,
+    )
+    record = RunRecord("synth-calibrate", {"run_dir": repo_path(run_dir)})
+    progress = ui.item_progress()
+    task = progress.add_task("Fit", total=1, rate="")
+    with ui.GracefulStop(), ui.Dashboard(progress) as board:
+        board.explain("Grid search over kappa and f, scoring coverage on the A1 and two-layer strata.")
+        try:
+            fitted = wo006_report.fit(run_dir)
+        except ValueError as error:
+            raise typer.BadParameter(str(error)) from error
+        progress.advance(task)
+        board.stats(kappa=fitted["kappa"], f=fitted["floor"], patches=fitted["patches"])
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(fitted, indent=1, sort_keys=True) + "\n")
+    record.results = {key: value for key, value in fitted.items() if key != "coverage_all_modes"}
+    record.outputs = [repo_path(out)]
+    record_path = record.finish(out.with_suffix(".run.json"))
+    ui.summary(
+        "Sigma calibration",
+        [
+            ("kappa", f"{fitted['kappa']:.2f}", "Multiplies the raw sigma."),
+            ("f", f"{fitted['floor']:.3f}", "Floor on sigma, as a share of |g|."),
+            ("in-band points", str(fitted["feasible_points"]), "Grid points that put both modes in 0.90 to 0.98."),
+        ],
+        [out, record_path],
+        record.reproduce,
+    )
+
+
+@synth_app.command("wo006-report")
+def wo006_report_command(
+    calibration: Annotated[Path, typer.Argument(help="JSON from `vch synth calibrate`.", exists=True)],
+    evaluation: Annotated[Path, typer.Argument(help="Evaluation split's run directory.", exists=True)],
+    processed: Annotated[Path, typer.Argument(help="Processed-noise run directory.", exists=True)],
+    out: Annotated[Path, typer.Option(help="Where to write tables and figures.")] = Path("runs") / "wo006-report",
+) -> None:
+    """Judge the WO-006 criteria from saved runs. It runs no estimator."""
+    from vesuvius_challenge import wo006_report
+
+    ui.banner(
+        "vch synth wo006-report",
+        "Reads the frozen calibration and the saved evaluation runs, then writes tables, figures and pre-registered "
+        "verdicts. It stops if lpsf.Params does not hold the fitted values.",
+        {"evaluation": evaluation.name, "processed": processed.name},
+        out,
+    )
+    record = RunRecord(
+        "wo006-report",
+        {
+            "calibration": repo_path(calibration),
+            "evaluation": repo_path(evaluation),
+            "processed": repo_path(processed),
+        },
+    )
+    progress = ui.item_progress()
+    task = progress.add_task("Report", total=1, rate="")
+    with ui.GracefulStop(), ui.Dashboard(progress) as board:
+        board.explain("Computing coverage, slope ratios and gain errors from the saved patches.")
+        written, results = wo006_report.build(calibration, evaluation, processed, out)
+        progress.advance(task)
+        board.stats(files=len(written))
+    record.results = {"verdicts": results}
+    record.outputs = [repo_path(path) for path in written]
+    record_path = record.finish(out / "report.run.json")
+    ui.summary(
+        "WO-006 verdicts",
+        [(name, value["verdict"], value["detail"]) for name, value in results.items()],
+        [*written, record_path],
+        record.reproduce,
+    )
 
 
 @synth_app.command("report")

@@ -1,0 +1,124 @@
+{
+  "finished_at": "2026-11-02T02:39:37+00:00",
+  "image_digest": null,
+  "outputs": [
+    "<repo>/runs/synth/wo006-calibration-20261102T022756/cases.parquet",
+    "<repo>/runs/synth/wo006-calibration-20261102T022756/details-orientation.parquet"
+  ],
+  "params": {
+    "config": {
+      "name": "wo006-calibration",
+      "seed": 2029,
+      "sweep": [
+        {
+          "estimator": [
+            "pc",
+            "lk"
+          ],
+          "experiment": "orientation",
+          "fibre_tilt_deg": [
+            0,
+            15,
+            30,
+            45,
+            60,
+            75,
+            90
+          ],
+          "seed_id": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "snr": 6,
+          "texture": [
+            "a1",
+            "two_layer"
+          ],
+          "theta_deg": [
+            1,
+            2,
+            5,
+            10
+          ]
+        },
+        {
+          "corr_length": [
+            2.0,
+            4.3,
+            8.0
+          ],
+          "estimator": [
+            "pc",
+            "lk"
+          ],
+          "experiment": "orientation",
+          "fibre_tilt_deg": [
+            0,
+            15,
+            30,
+            45,
+            60,
+            75,
+            90
+          ],
+          "seed_id": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "snr": 6,
+          "texture": "realistic",
+          "theta_deg": [
+            1,
+            2,
+            5,
+            10
+          ]
+        }
+      ]
+    },
+    "config_path": "<repo>/configs/synth/wo006-calibration.toml",
+    "n_cases": 1400,
+    "only": null,
+    "workers": 14
+  },
+  "partial": false,
+  "repo_commit": "9f46ee8ccee4792a626ba4a8ff006d052e483dec",
+  "reproduce": "uv run vch synth run --config configs/synth/wo006-calibration.toml --workers 14",
+  "results": {
+    "cases_done": 1400,
+    "cases_planned": 1400,
+    "compute": {
+      "cpus": 16,
+      "gpu": null,
+      "workers": 14
+    },
+    "cpu_seconds_in_cases": 9770.364563469542,
+    "errors": 0,
+    "per_experiment": {
+      "orientation": 1400
+    },
+    "wall_seconds": 701.7622269970016
+  },
+  "seed": 2029,
+  "source_sha256": "6cf1926acd6fc09cfa43faa8051c14d61a6882095790e04fb445e40eb6df41a3",
+  "stage": "synth-run",
+  "started_at": "2026-11-02T02:27:56+00:00",
+  "versions": {
+    "numpy": "2.5.4",
+    "pyarrow": "26.0.0",
+    "python": "3.14.10",
+    "rich": "15.0.0",
+    "scipy": "1.18.1",
+    "tifffile": "2026.10.15",
+    "typer": "0.27.3",
+    "vesuvius": "0.2.4",
+    "zarr": "3.4.2"
+  },
+  "villa_sha": "d57c28ebee8776b618f9851c2289cc407ea99dd4"
+}

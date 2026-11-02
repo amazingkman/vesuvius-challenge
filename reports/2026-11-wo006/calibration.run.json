@@ -1,0 +1,50 @@
+{
+  "finished_at": "2026-11-02T02:50:09+00:00",
+  "image_digest": null,
+  "outputs": [
+    "<repo>/reports/2026-11-wo006/calibration.json"
+  ],
+  "params": {
+    "run_dir": "<repo>/runs/synth/wo006-calibration-20261102T022756"
+  },
+  "partial": false,
+  "repo_commit": "9f46ee8ccee4792a626ba4a8ff006d052e483dec",
+  "reproduce": "uv run vch synth calibrate runs/synth/wo006-calibration-20261102T022756 --out reports/2026-11-wo006/calibration.json",
+  "results": {
+    "all_modes_fit": {
+      "floor": 0.57,
+      "kappa": 11.2
+    },
+    "coverage": {
+      "a1": 0.9959821428571428,
+      "two_layer": 0.9318080357142857
+    },
+    "feasible_points": 0,
+    "floor": 0.0,
+    "kappa": 2.95,
+    "patches": 44800,
+    "seed_ids": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "seed": null,
+  "source_sha256": "f32c9b6fb5d743f1c2bc183d5835586c08cfde300035d7eda3a9f871ca2720ca",
+  "stage": "synth-calibrate",
+  "started_at": "2026-11-02T02:50:05+00:00",
+  "versions": {
+    "numpy": "2.5.4",
+    "pyarrow": "26.0.0",
+    "python": "3.14.10",
+    "rich": "15.0.0",
+    "scipy": "1.18.1",
+    "tifffile": "2026.10.15",
+    "typer": "0.27.3",
+    "vesuvius": "0.2.4",
+    "zarr": "3.4.2"
+  },
+  "villa_sha": "d57c28ebee8776b618f9851c2289cc407ea99dd4"
+}

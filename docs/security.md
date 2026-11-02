@@ -16,7 +16,7 @@ The repository is public on purpose, so researchers can use it (DR-007). Nothing
   - No absolute paths (`/home/…`, `/Users/…`, `C:\…`), usernames, hostnames, machine nicknames, IPs (other than `127.0.0.1` in tests), MAC addresses, or serial numbers.
   - **Run records** store paths relative to the repo root (`<repo>/data/...`). The Podman mount in recorded commands is written `$PWD/data:/data`, which is reproducible and anonymous.
   - Hardware is described generically: "single workstation, 24 GB GPU".
-- **R3. No render-derived images** in the repo or PRs (DR-008). Pre-commit and CI block image formats outside `docs/assets/` (which holds synthetic figures only).
+- **R3. No render-derived images** in the repo or PRs (DR-008). Images are allowed only when listed in FIGURES.md with their provenance class (synthetic or field-map); render-derived images are never allowed (WO-005).
 - **R4. Supply chain.**
   - Dependencies are locked with hashes (`uv.lock`); the villa git dependency is pinned to a commit.
   - CI actions are pinned by commit SHA; workflows use `permissions: contents: read`, have no secrets, and never use `pull_request_target`.

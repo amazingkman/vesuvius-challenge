@@ -25,6 +25,12 @@ Pipeline
 4. Metric-corrected gradient ``g``; screened, anisotropically weighted least-squares integration to ``h_hat`` with
    ``z*`` screening (Frankot–Chellappa [frankot1988] kept as a reference); consistency residual ``r = grad z* - g``;
    curl as a model-violation map.
+
+WO-006 additions (the WO-002 defaults are unchanged):
+
+- ``calibrate`` fits, and ``apply_calibration`` applies, the Sigma inflation ``sigma^2 <- kappa^2 sigma^2 + (f |g|)^2``;
+- ``gain_map`` predicts the depth-decorrelation gain per patch (derivation in its docstring);
+- ``Params(directional=True)`` keeps only across-fibre information and reports the along-fibre component as unobserved.
 """
 
 from __future__ import annotations
@@ -40,6 +46,7 @@ from scipy.sparse.linalg import spsolve
 Aggregate = Literal["rho", "information"]
 Estimator = Literal["pc", "lk"]
 FFT_WORKERS = -1  # scipy.fft threads; sweeps running one case per process set this to 1
+RANK_TOLERANCE = 1e-9  # an eigenvalue this far below the largest is rounding error, not an observed direction
 
 
 @dataclass(frozen=True)
@@ -72,7 +79,13 @@ class Params:
     rho_min: float = 0.1  # pairs whose correlation is below this are ignored
     max_pairs: int | None = None  # if set, keep only this many pairs of the window, centred on its peak
     # uncertainty and integration
-    kappa: float = 1.0  # covariance calibration factor
+    kappa: float = 1.0  # covariance scale inside the raw estimate, unchanged from WO-002
+    # WO-006 calibration: variance = kappa^2 sigma^2 + (f |g|)^2. Fitted on seeds 0-4 and frozen before any evaluation
+    # seed ran (reports/2026-11-wo006/calibration.json). No single pair suits every mode; see the WO-006 report.
+    sigma_inflation: float = 2.95  # kappa
+    sigma_floor: float = 0.0  # f
+    directional: bool = False  # keep across-fibre information only (WO-006; off until the WO-003 pilot decides)
+    directional_rcond: float = 0.1  # a summed direction below this fraction of the strongest counts as unobserved
     zstar_sigma: float = 1.0  # voxels; screening weight of z* in the integration
     chunk: int = 64  # pairs per FFT batch (small chunks avoid page-fault cost on large temporaries)
 
@@ -396,6 +409,9 @@ class Field:
     kstar: np.ndarray  # (R, C) fractional layer index of the sheet
     kstar_censored: np.ndarray  # (R, C) bool: the window touches an end of the stack
     metric: np.ndarray  # (R, C, 2, 2) mesh metric g_ij at the patch centres
+    # Directional estimates only. Zero information along a direction means infinite variance: that direction is
+    # unobserved, and `shift` holds no estimate along it. `cov` then carries the cap there, only to stay finite.
+    information: np.ndarray | None = None  # (R, C, 2, 2) shift information, 1/px^2, rank 0, 1 or 2
 
     @property
     def spacing(self) -> float:
@@ -409,6 +425,36 @@ class Field:
     @property
     def grad_cov(self) -> np.ndarray:
         return np.einsum("rcij,rcjk,rclk->rcil", self.metric, self.cov, self.metric) / self.slice_step**2
+
+    @property
+    def calibrated_grad_cov(self) -> np.ndarray:
+        """``grad_cov`` with the WO-006 calibration applied."""
+        return apply_calibration(self.grad_cov, self.grad, self.params.sigma_inflation, self.params.sigma_floor)
+
+    @property
+    def grad_information(self) -> np.ndarray | None:
+        """Calibrated information on ``grad h`` for a directional estimate; ``None`` for a full estimate.
+
+        A direction with zero information stays at zero: calibration cannot create or remove an observation.
+        """
+        if self.information is None:
+            return None
+        inverse = np.linalg.inv(self.metric)
+        raw = np.einsum("rcji,rcjk,rckl->rcil", inverse, self.information, inverse) * self.slice_step**2
+        evals, evecs = np.linalg.eigh(raw)
+        speed = np.linalg.norm(self.grad, axis=-1, keepdims=True)
+        with np.errstate(divide="ignore"):
+            var = np.where(evals > 0, 1 / evals, np.inf)
+        var = self.params.sigma_inflation**2 * var + (self.params.sigma_floor * speed) ** 2
+        out = np.where(np.isfinite(var), 1 / var, 0.0)
+        return np.einsum("rcij,rcj,rckj->rcik", evecs, out, evecs)
+
+    def observed_rank(self) -> np.ndarray:
+        """Number of directions observed per patch: 2 for a full estimate, 0 to 2 for a directional one."""
+        if self.information is None:
+            return np.where(self.valid, 2, 0)
+        evals = np.linalg.eigvalsh(self.information)
+        return np.sum(evals > RANK_TOLERANCE * evals[..., -1:], axis=-1) * (evals[..., -1] > 0)
 
     @property
     def zstar(self) -> np.ndarray:
@@ -539,6 +585,43 @@ def _estimate_pc(tex_view, amp_view, tex_coef, amp_coef, kk, rr, cc, rows, cols,
     return found
 
 
+def across_fibre(pair_cov: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Best-determined direction of each pair and its variance. Peak curvature is high across fibres, so this is the
+    across-fibre direction wherever the texture is oriented. ``pair_cov`` is ``(..., 2, 2)``."""
+    evals, evecs = np.linalg.eigh(pair_cov)
+    return evecs[..., 0], evals[..., 0]
+
+
+def solve_observed(summed: np.ndarray, rhs: np.ndarray, rcond: float, cap: float):
+    """Solve ``J s = rhs`` keeping only directions with ``eigenvalue >= rcond * largest``.
+
+    Returns the solution, ``J`` restricted to those directions (zero along the rest, i.e. infinite variance) and a
+    finite covariance with ``cap`` along the rest.
+    """
+    evals, evecs = np.linalg.eigh(summed)
+    keep = (evals > 0) & (evals >= rcond * evals[..., -1:])
+    safe = np.where(keep, evals, 1.0)
+    inverse = np.where(keep, 1 / safe, 0.0)
+    shift = np.einsum("...ij,...j,...kj,...k->...i", evecs, inverse, evecs, rhs)
+    information = np.einsum("...ij,...j,...kj->...ik", evecs, np.where(keep, evals, 0.0), evecs)
+    cov = np.einsum("...ij,...j,...kj->...ik", evecs, np.where(keep, 1 / safe, cap), evecs)
+    return shift, information, cov
+
+
+def directional_summary(pair_shift, pair_cov, used, rcond: float, cap: float):
+    """Project every pair onto its across-fibre direction, sum information over layers, then solve.
+
+    Summing before solving lets recto and verso cover two directions when both are in the window. A patch that sees
+    one direction stays rank 1: nothing is estimated along the fibres, and the integrator leaves that direction to
+    neighbouring patches and the z* screening term.
+    """
+    across, variance = across_fibre(pair_cov)
+    weight = np.where(used, 1 / np.maximum(variance, 1e-300), 0.0)
+    summed = np.einsum("krc,krci,krcj->rcij", weight, across, across)
+    rhs = np.einsum("krc,krci,krcj,krcj->rci", weight, across, across, pair_shift)
+    return solve_observed(summed, rhs, rcond, cap)
+
+
 def _lk_terms(a: np.ndarray, b: np.ndarray, weight: np.ndarray):
     """Per-pair symmetric Lucas–Kanade terms: information A, right-hand side c, residual energy, weights."""
     mean = 0.5 * (a + b)
@@ -570,12 +653,22 @@ def _estimate_lk(tex_view, amp_view, tex_coef, amp_coef, kk, rr, cc, rows, cols,
         weight = w[None] * (mask if params.normalize else 1.0)
         info, rhs, meat, diff, grads = _lk_terms(a, b, weight)
         pair_info = info
+        if params.directional:
+            # Keep each pair's across-fibre direction, the eigenvector with the most gradient energy.
+            across = np.linalg.eigh(info)[1][..., 1]
+            energy = np.einsum("na,nab,nb->n", across, info, across)
+            info = energy[:, None, None] * np.einsum("na,nb->nab", across, across)
+            rhs = np.einsum("na,nb,nb->na", across, across, rhs)
+            meat = np.einsum("na,nc,ncd,nd,ne->nae", across, across, meat, across, across)
         info_sum = np.zeros((n_rc, 2, 2))
         rhs_sum = np.zeros((n_rc, 2))
         np.add.at(info_sum, patch_id, info)
         np.add.at(rhs_sum, patch_id, rhs)
         ridge = 1e-9 * np.trace(info_sum, axis1=1, axis2=2)[:, None, None] * np.eye(2) + 1e-12 * np.eye(2)
-        delta = np.linalg.solve(info_sum + ridge, rhs_sum[..., None])[..., 0]
+        if params.directional:
+            delta = solve_observed(info_sum, rhs_sum, params.directional_rcond, 0.0)[0]
+        else:
+            delta = np.linalg.solve(info_sum + ridge, rhs_sum[..., None])[..., 0]
         has = np.bincount(patch_id, minlength=n_rc) > 0
         shift = shift + np.where(has[:, None], delta, 0.0)
     # Sandwich covariance with the residual variance of the final linearisation.
@@ -587,7 +680,10 @@ def _estimate_lk(tex_view, amp_view, tex_coef, amp_coef, kk, rr, cc, rows, cols,
     sigma2 = res_sum / np.maximum(wsum, 1e-12)
     meat_sum = np.zeros((n_rc, 2, 2))
     np.add.at(meat_sum, patch_id, meat)
-    inv = np.linalg.inv(info_sum + ridge)
+    if params.directional:
+        inv = solve_observed(info_sum, np.zeros((n_rc, 2)), params.directional_rcond, 0.0)[2]
+    else:
+        inv = np.linalg.inv(info_sum + ridge)
     cov = params.kappa * sigma2[:, None, None] * np.einsum("nab,nbc,ncd->nad", inv, meat_sum, inv)
     # Per-pair covariance (for reporting the aperture problem per layer): sigma2 * A_k^-1 * M_k * A_k^-1.
     pair_inv = np.linalg.pinv(pair_info)
@@ -686,6 +782,7 @@ def estimate(
     pair_rho = np.full(candidate.shape, np.nan)
     pair_cov = np.broadcast_to(cap * np.eye(2), (*candidate.shape, 2, 2)).copy()
 
+    information = None
     if params.estimator == "lk":
         shift_flat, cov_flat, pc_cov, pc_rho = _estimate_lk(
             tex_view, amp_view, tex_coef, amp_coef, kk, rr, cc, rows, cols, params, shape_rc
@@ -697,6 +794,14 @@ def estimate(
         valid = used.any(axis=0)
         shift = np.where(valid[..., None], shift_flat.reshape(*shape_rc, 2), 0.0)
         cov = np.where(valid[..., None, None], cov_flat.reshape(*shape_rc, 2, 2), cap * np.eye(2))
+        if params.directional:
+            # LK's patch shift has no along-fibre part by construction. Its sandwich covariance is what is reported.
+            evals, evecs = np.linalg.eigh(cov)
+            seen = evals > RANK_TOLERANCE * np.maximum(evals[..., -1:], 1e-300)
+            inverse = np.where(seen, 1 / np.where(seen, evals, 1.0), 0.0)
+            information = np.einsum("rcij,rcj,rckj->rcik", evecs, inverse, evecs)
+            information = np.where(valid[..., None, None], information, 0.0)
+            cov = np.einsum("rcij,rcj,rckj->rcik", evecs, np.where(seen, evals, cap), evecs)
         n_used = used.sum(axis=0)
         rho = np.where(valid, np.where(used, np.nan_to_num(pair_rho), 0.0).sum(axis=0) / np.maximum(n_used, 1), 0.0)
     else:
@@ -709,7 +814,9 @@ def estimate(
         total = weight.sum(axis=0)
         valid = total > 0
         safe = np.where(valid, total, 1.0)
-        if params.aggregate == "information":
+        if params.directional:
+            shift, information, cov = directional_summary(pair_shift, pair_cov, used, params.directional_rcond, cap)
+        elif params.aggregate == "information":
             info = np.where(used[..., None, None], np.linalg.inv(pair_cov), 0.0)
             cov = np.linalg.inv(info.sum(axis=0) + np.eye(2) / cap**2)
             shift = np.einsum("rcij,rcj->rci", cov, np.einsum("krcij,krcj->rci", info, pair_shift))
@@ -741,6 +848,7 @@ def estimate(
         kstar=kstar,
         kstar_censored=censored,
         metric=_metric_at_patches(metric, layers.shape[1:], rows, cols, p),
+        information=information,
     )
 
 
@@ -778,6 +886,7 @@ def screened_lsq(
     zstar: np.ndarray | None = None,
     zstar_mask: np.ndarray | None = None,
     zstar_sigma: float = 1.0,
+    information: np.ndarray | None = None,
 ) -> np.ndarray:
     """Screened, anisotropically weighted least squares (addendum 2 item 5).
 
@@ -786,6 +895,10 @@ def screened_lsq(
     full 2x2 covariance of that mean (the aperture direction gets little weight). Only cells whose four corners are
     in ``mask`` contribute, which gives natural Neumann boundaries on irregular masks. Without ``z*`` the result has
     zero mean. A 1e-6 relative Laplacian only removes the bilinear checkerboard null space.
+
+    With ``information`` (rank-deficient, from a directional estimate) each cell sums its corners' information instead
+    of averaging their covariances, so a direction no corner observes gets zero weight. That direction is then set
+    only by neighbouring cells and the z* screening term.
     """
     rows, cols = gv.shape
     n = rows * cols
@@ -806,9 +919,29 @@ def screened_lsq(
                 -1,
             ).reshape(-1, 2)[cell_ok]
         )
-        cell_cov = ((cov[:-1, :-1] + cov[:-1, 1:] + cov[1:, :-1] + cov[1:, 1:]) / 16).reshape(-1, 2, 2)[cell_ok]
-        evals, evecs = np.linalg.eigh(cell_cov)
-        whiten = np.einsum("nij,nj,nkj->nik", evecs, 1 / np.sqrt(np.clip(evals, 1e-12, None)), evecs)
+        if information is None:
+            cell_cov = ((cov[:-1, :-1] + cov[:-1, 1:] + cov[1:, :-1] + cov[1:, 1:]) / 16).reshape(-1, 2, 2)[cell_ok]
+            evals, evecs = np.linalg.eigh(cell_cov)
+            whiten = np.einsum("nij,nj,nkj->nik", evecs, 1 / np.sqrt(np.clip(evals, 1e-12, None)), evecs)
+        else:
+            corners_info = [information[:-1, :-1], information[:-1, 1:], information[1:, :-1], information[1:, 1:]]
+            corners_g = [
+                np.stack([values[..., 0], values[..., 1]], -1)
+                for values in (
+                    np.stack([gv[:-1, :-1], gu[:-1, :-1]], -1),
+                    np.stack([gv[:-1, 1:], gu[:-1, 1:]], -1),
+                    np.stack([gv[1:, :-1], gu[1:, :-1]], -1),
+                    np.stack([gv[1:, 1:], gu[1:, 1:]], -1),
+                )
+            ]
+            cell_info = sum(corners_info).reshape(-1, 2, 2)[cell_ok]
+            weighted = sum(np.einsum("rcij,rcj->rci", j, g) for j, g in zip(corners_info, corners_g, strict=True))
+            evals, evecs = np.linalg.eigh(cell_info)
+            evals = np.clip(evals, 0.0, None)
+            inverse = np.where(evals > 1e-12 * evals[..., -1:], 1 / np.where(evals > 0, evals, 1.0), 0.0)
+            pinv = np.einsum("nij,nj,nkj->nik", evecs, inverse, evecs)
+            cell_g = np.einsum("nij,nj->ni", pinv, weighted.reshape(-1, 2)[cell_ok])
+            whiten = np.einsum("nij,nj,nkj->nik", evecs, np.sqrt(evals), evecs)
         corners = {
             (0, 0): idx[:-1, :-1].ravel()[cell_ok],
             (0, 1): idx[:-1, 1:].ravel()[cell_ok],
@@ -869,15 +1002,17 @@ def integrate(field: Field, method: Literal["lsq", "fc"] = "lsq") -> np.ndarray:
         if ok.any():
             h = h + float(np.mean(field.zstar[ok] - h[ok]))
         return h
+    # Calibrated, as DR-011 item 4 requires of integration weights. The defaults kappa = 1, f = 0 reduce to grad_cov.
     return screened_lsq(
         grad[..., 0],
         grad[..., 1],
-        field.grad_cov,
+        field.calibrated_grad_cov,
         field.spacing,
         field.valid,
         field.zstar,
         field.zstar_ok,
         field.params.zstar_sigma,
+        information=field.grad_information,
     )
 
 
@@ -913,3 +1048,280 @@ def patch_average(values: np.ndarray, field: Field, power: int = 2) -> np.ndarra
     cols = np.rint(field.centres_u - (p - 1) / 2).astype(int)
     view = np.lib.stride_tricks.sliding_window_view(values, (p, p), axis=(0, 1))[rows][:, cols]
     return np.einsum("rc...ij,ij->rc...", view, w)
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Sigma calibration (WO-006)
+# ---------------------------------------------------------------------------------------------------------------
+
+
+def calibrated_variance(variance, magnitude, kappa: float, floor: float):
+    """``kappa^2 sigma^2 + (f |g|)^2``."""
+    return kappa**2 * np.asarray(variance) + (floor * np.asarray(magnitude)) ** 2
+
+
+def apply_calibration(cov: np.ndarray, grad: np.ndarray, kappa: float, floor: float) -> np.ndarray:
+    """Calibrated covariance ``(..., 2, 2)``: the floor is isotropic, so it applies along every direction."""
+    magnitude2 = np.sum(np.asarray(grad) ** 2, axis=-1)
+    return kappa**2 * cov + floor**2 * magnitude2[..., None, None] * np.eye(2)
+
+
+@dataclass(frozen=True)
+class Calibration:
+    kappa: float
+    floor: float
+    loss: float
+    coverage: dict[str, float]
+
+
+COVERAGE_Z = 1.96
+COVERAGE_TARGET = 0.94  # centre of the accepted band 0.90-0.98
+
+
+def stratum_coverage(error, variance, magnitude, strata, kappa: float, floor: float) -> dict[str, float]:
+    """Share of 95% intervals containing the truth, per stratum."""
+    inside = np.abs(error) <= COVERAGE_Z * np.sqrt(calibrated_variance(variance, magnitude, kappa, floor))
+    return {str(name): float(inside[strata == name].mean()) for name in np.unique(strata)}
+
+
+def calibrate(
+    error: np.ndarray,
+    variance: np.ndarray,
+    magnitude: np.ndarray,
+    strata: np.ndarray,
+    kappas: np.ndarray | None = None,
+    floors: np.ndarray | None = None,
+) -> Calibration:
+    """Fit ``kappa`` and ``f`` by grid search on a calibration split.
+
+    Loss: the mean over strata of ``(coverage - target)^2``, where each stratum is weighted equally, so that a mode
+    with many patches does not decide the fit. Ties go to the smallest intervals. ``error`` is estimate minus truth
+    along the evaluated direction, ``variance`` the raw Sigma there, ``magnitude`` ``|g|``. All are 1-D and aligned.
+    """
+    kappas = np.arange(1.0, 6.01, 0.05) if kappas is None else np.asarray(kappas)
+    floors = np.arange(0.0, 0.4001, 0.005) if floors is None else np.asarray(floors)
+    error, variance, magnitude, strata = map(np.asarray, (error, variance, magnitude, strata))
+    names = np.unique(strata)
+    masks = [strata == name for name in names]
+    abs_error = np.abs(error)
+    best = (np.inf, np.inf, 1.0, 0.0)
+    for kappa in kappas:
+        for floor in floors:
+            inside = abs_error <= COVERAGE_Z * np.sqrt(calibrated_variance(variance, magnitude, kappa, floor))
+            loss = float(np.mean([(inside[mask].mean() - COVERAGE_TARGET) ** 2 for mask in masks]))
+            width = float(np.mean(calibrated_variance(variance, magnitude, kappa, floor)))
+            if (round(loss, 9), width) < (round(best[0], 9), best[1]):
+                best = (loss, width, float(kappa), float(floor))
+    loss, _, kappa, floor = best
+    kappa, floor = round(kappa, 4), round(floor, 4)  # grids built by adding steps carry rounding noise
+    return Calibration(kappa, floor, loss, stratum_coverage(error, variance, magnitude, strata, kappa, floor))
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Decorrelation-gain diagnostic (WO-006)
+# ---------------------------------------------------------------------------------------------------------------
+
+GAIN_CLIP = (-1.0, 1.0)
+R_MIN = 0.02  # correlations below this are not used in the fit of L
+VOID_MARGIN = 6  # layers kept clear of the window on each side before a layer can count as void
+DIRECTION_SMOOTH = 2.0  # patches: tilt direction comes from a Sigma-weighted mean over about this radius
+VOID_VARIANCE = 0.5  # a void layer has less than this share of the window's mean band-passed variance
+
+
+@dataclass
+class GainMap:
+    """Per-patch fields of :func:`gain_map`, all ``(R, C)`` unless noted."""
+
+    length: np.ndarray  # L, through-depth correlation length, voxels; inf when r does not fall with depth
+    ell_along: np.ndarray  # in-plane correlation length along the fibres, px
+    ell_across: np.ndarray  # ... across the fibres, px
+    fibre_angle: np.ndarray  # fibre direction, radians from +u toward +v, in [0, pi)
+    gain: np.ndarray  # predicted gain along the measured tilt direction (`tilt_direction`), clipped to GAIN_CLIP
+    gain_along: np.ndarray  # predicted gain for a tilt along the fibres
+    gain_across: np.ndarray  # predicted gain for a tilt across the fibres
+    flagged: np.ndarray  # bool: the first-order model cannot be trusted here
+    lags: np.ndarray  # (M,) depth lags, voxels
+    lag_r: np.ndarray  # (M, R, C) r(lag), inside the window, with the in-plane slide removed
+    tensor: np.ndarray  # (R, C, 2, 2) normalised structure tensor, 1/px^2
+    # From void layers, NaN if the stack has none. Volume-fixed noise appears there and material texture does not.
+    noise_share: np.ndarray  # share of the window's band-passed variance that the void level explains
+    length_void: np.ndarray  # L measured in the void layers, voxels
+    length_material: np.ndarray  # L after subtracting the void correlation from r(lag), voxels
+    shrink: np.ndarray  # noise-only gain along the measured tilt: fixed noise pulls toward zero shift, never past it
+    gain_material: np.ndarray  # first-order gain from length_material, times shrink, clipped to GAIN_CLIP
+
+
+def fit_depth_length(r: np.ndarray, lags: np.ndarray) -> np.ndarray:
+    """L from ``r(z) = A exp(-z^2 / L^2)``, where a free A absorbs independent noise. ``r`` is ``(M, ...)``.
+
+    A straight-line fit of log r on z^2. Infinite if r does not fall with depth, NaN with fewer than two usable lags.
+    """
+    x = np.asarray(lags, dtype=np.float64).reshape(-1, *([1] * (r.ndim - 1))) ** 2
+    use = np.nan_to_num(r, nan=0.0) > R_MIN
+    y = np.log(np.where(use, r, 1.0))
+    count = use.sum(axis=0)
+    mx = np.sum(x * use, axis=0) / np.maximum(count, 1)
+    my = np.sum(y * use, axis=0) / np.maximum(count, 1)
+    sxx = np.sum(use * (x - mx) ** 2, axis=0)
+    sxy = np.sum(use * (x - mx) * (y - my), axis=0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        slope = np.where(sxx > 0, sxy / sxx, np.nan)
+        length = np.where(slope < 0, np.sqrt(-1 / slope), np.inf)
+    return np.where((count >= 2) & np.isfinite(slope), length, np.nan)
+
+
+def _derivative(image: np.ndarray, axis: int) -> np.ndarray:
+    """Five-point central difference; a two-point one under-reads gradients of 8-px texture by about 10%."""
+    return ndimage.correlate1d(image, np.array([1, -8, 0, 8, -1]) / 12.0, axis=axis, mode="reflect")
+
+
+def tilt_direction(field: Field, sigma: float = DIRECTION_SMOOTH) -> np.ndarray:
+    """Unit measured tilt direction per patch, ``(R, C, 2)``.
+
+    A single patch's g is a poor direction: noise along the fibres is large, so it swings toward the fibres even when
+    the tilt runs across them (at 90 degrees that alone turned a true gain of 1 into a prediction of 0.2). Weighting g
+    by its own information over neighbouring patches lets the well-measured component set the direction.
+    """
+    info = np.linalg.pinv(field.grad_cov) * field.valid[..., None, None]
+    weighted = np.einsum("rcij,rcj->rci", info, field.grad)
+    smooth = lambda values: ndimage.gaussian_filter(values, sigma, mode="nearest", axes=(0, 1))  # noqa: E731
+    mean = np.einsum("rcij,rcj->rci", np.linalg.pinv(smooth(info)), smooth(weighted))
+    speed = np.linalg.norm(mean, axis=-1, keepdims=True)
+    return mean / np.where(speed > 0, speed, 1.0)
+
+
+def gain_map(layers: np.ndarray, field: Field) -> GainMap:
+    """Predict the depth-decorrelation gain per patch from the layers alone. Diagnostic only; nothing is corrected.
+
+    Derivation. Let texture correlation be ``C(x, z) = exp(-x^T T x / 2) exp(-z^2 / L^2)``, with in-plane offset x and
+    depth offset z in the sheet, where T is the normalised structure tensor ``<grad I grad I^T> / <I^2>``. For a small
+    tilt along unit t, the layer pair offset by Delta along the normal has ``x = s + Delta tan(theta) t`` and
+    ``z = Delta``, minus ``s . t tan(theta)``. The match s maximises C, so to first order in tan(theta)
+
+        s = Delta tan(theta) (I - (2 / L^2) T^-1) t   (sign as for A1, where s = Delta tan(theta) t)
+
+    The gain is therefore a tensor ``G = I - (2 / L^2) T^-1`` with the eigenvectors of T, and along t it is
+    ``1 - 2 l(t)^2 / L^2`` with ``l(t)^2 = t^T T^-1 t = cos^2 l_along^2 + sin^2 l_across^2``. This corrects the 1-D form
+    of the WO-002 report (section 4) only for tilts between the principal directions.
+    """
+    params = field.params
+    p = params.patch
+    rows = np.rint(field.centres_v - (p - 1) / 2).astype(int)
+    cols = np.rint(field.centres_u - (p - 1) / 2).astype(int)
+    w = hann2d(p) if params.window else np.ones((p, p))
+    wn = (w / w.sum())[::-1, ::-1]
+
+    def moment(image: np.ndarray) -> np.ndarray:
+        return signal.fftconvolve(image, wn, mode="valid")[np.ix_(rows, cols)]
+
+    band = bandpass(np.asarray(layers, dtype=np.float32), params.bp_fine, params.bp_coarse).astype(np.float64)
+    means = np.stack([moment(b) for b in band])
+    variance = np.clip(np.stack([moment(b * b) for b in band]) - means**2, 0, None)
+    grad_v = [_derivative(b, 0) for b in band]
+    grad_u = [_derivative(b, 1) for b in band]
+
+    def pair_tensor(k: int) -> np.ndarray:
+        """Structure moments of layers k and k + 1: independent noise averages out of a cross product."""
+        vv = moment(grad_v[k] * grad_v[k + 1])
+        uu = moment(grad_u[k] * grad_u[k + 1])
+        vu = 0.5 * (moment(grad_v[k] * grad_u[k + 1]) + moment(grad_u[k] * grad_v[k + 1]))
+        return np.stack([np.stack([vv, vu], -1), np.stack([vu, uu], -1)], -2)
+
+    def correlations(mask: np.ndarray, steps: np.ndarray) -> np.ndarray:
+        """r at each lag over layer pairs that both lie in ``mask`` ``(K, R, C)``."""
+        out = np.full((steps.size, *mask.shape[1:]), np.nan)
+        for index, step in enumerate(steps):
+            both = mask[:-step] & mask[step:]
+            cross = np.zeros(mask.shape[1:])
+            scale = np.zeros(mask.shape[1:])
+            for k in np.flatnonzero(both.any(axis=(1, 2))):
+                covariance = moment(band[k] * band[k + step]) - means[k] * means[k + step]
+                cross += both[k] * covariance
+                scale += both[k] * np.sqrt(variance[k] * variance[k + step])
+            with np.errstate(divide="ignore", invalid="ignore"):
+                out[index] = np.where(scale > 0, cross / scale, np.nan)
+        return out
+
+    def tensor_over(mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Summed structure moments over adjacent pairs in ``mask``, and the same normalised by their covariance."""
+        both = mask[:-1] & mask[1:]
+        moments = np.zeros((*mask.shape[1:], 2, 2))
+        energy = np.zeros(mask.shape[1:])
+        for k in np.flatnonzero(both.any(axis=(1, 2))):
+            moments += both[k][..., None, None] * pair_tensor(k)
+            energy += both[k] * (moment(band[k] * band[k + 1]) - means[k] * means[k + 1])
+        with np.errstate(divide="ignore", invalid="ignore"):
+            normal = np.where((energy > 0)[..., None, None], moments / energy[..., None, None], np.nan)
+        return moments, normal
+
+    steps = np.arange(1, max(2, int(round(3 / field.slice_step))) + 1)
+    lags = steps * field.slice_step
+    window = field.in_window
+    moments, tensor = tensor_over(window)
+    tensor = np.nan_to_num(tensor)
+    evals, evecs = np.linalg.eigh(tensor)  # ascending: the first eigenvector runs along the fibres
+    with np.errstate(divide="ignore"):
+        ell_along = np.where(evals[..., 0] > 0, 1 / np.sqrt(np.clip(evals[..., 0], 1e-12, None)), np.inf)
+        ell_across = np.where(evals[..., 1] > 0, 1 / np.sqrt(np.clip(evals[..., 1], 1e-12, None)), np.inf)
+    along = evecs[..., 0]  # (v, u)
+    fibre_angle = np.mod(np.arctan2(along[..., 0], along[..., 1]), np.pi)
+
+    # A tilted mesh slides texture between layers, which lowers zero-lag r without any depth decorrelation. Remove it
+    # to second order: a slide d multiplies r by exp(-d^T T d / 2).
+    slide = np.einsum("rci,rcij,rcj->rc", field.shift, tensor, field.shift)
+    lag_r = correlations(window, steps) * np.exp(np.clip(0.5 * slide * (steps.reshape(-1, 1, 1) ** 2), 0, 1))
+    length = fit_depth_length(lag_r, lags)
+
+    direction = tilt_direction(field)
+    cos2 = np.sum(direction * along, axis=-1) ** 2
+    ell2 = cos2 * ell_along**2 + (1 - cos2) * ell_across**2
+    with np.errstate(invalid="ignore", divide="ignore"):
+        raw = 1 - 2 * ell2 / length**2
+        raw_along = 1 - 2 * ell_along**2 / length**2
+        raw_across = 1 - 2 * ell_across**2 / length**2
+    gain = np.clip(np.nan_to_num(raw, nan=np.nan), *GAIN_CLIP)
+    flagged = (
+        ~np.isfinite(raw) | (raw < GAIN_CLIP[0]) | (raw > GAIN_CLIP[1]) | (ell_along > p / 4) | ~np.isfinite(length)
+    )
+    flagged = flagged & ~(length == np.inf)  # L = inf is the A1 limit, a gain of exactly 1
+
+    nans = np.full(length.shape, np.nan)
+    noise_share, length_void, length_material, shrink, gain_material = nans, nans, nans, nans, nans
+    near = ndimage.binary_dilation(window, structure=np.ones((2 * VOID_MARGIN + 1, 1, 1), dtype=bool))
+    level = np.sum(window * variance, axis=0) / np.maximum(window.sum(axis=0), 1)
+    void = ~near & (variance < VOID_VARIANCE * level)
+    if void.sum(axis=0).max() >= steps.max() + 2:
+        noise_share = np.sum(void * variance, axis=0) / np.maximum(void.sum(axis=0), 1) / np.maximum(level, 1e-30)
+        noise_share = np.where(void.any(axis=0), np.clip(noise_share, 0, 1), np.nan)
+        void_r = correlations(void, steps)
+        length_void = fit_depth_length(void_r, lags)
+        share = np.where(np.isfinite(noise_share), noise_share, 0.0)
+        material_r = (lag_r - share * np.nan_to_num(void_r)) / np.maximum(1 - share, 1e-6)
+        length_material = fit_depth_length(material_r, lags)
+        void_moments, _ = tensor_over(void)
+        void_pairs = np.maximum((void[:-1] & void[1:]).sum(axis=0), 1)
+        window_pairs = np.maximum((window[:-1] & window[1:]).sum(axis=0), 1)
+        tilt = np.einsum("rci,rcij,rcj->rc", direction, void_moments, direction) / void_pairs
+        total = np.einsum("rci,rcij,rcj->rc", direction, moments, direction) / window_pairs
+        with np.errstate(divide="ignore", invalid="ignore"):
+            shrink = np.clip(1 - tilt / total, 0.0, 1.0)
+            material = 1 - 2 * ell2 / length_material**2
+        gain_material = np.clip(material * shrink, *GAIN_CLIP)
+    return GainMap(
+        length=length,
+        ell_along=ell_along,
+        ell_across=ell_across,
+        fibre_angle=fibre_angle,
+        gain=gain,
+        gain_along=raw_along,
+        gain_across=raw_across,
+        flagged=flagged,
+        lags=lags,
+        lag_r=lag_r,
+        tensor=tensor,
+        noise_share=noise_share,
+        length_void=length_void,
+        length_material=length_material,
+        shrink=shrink,
+        gain_material=gain_material,
+    )

@@ -207,6 +207,9 @@ def repository(tmp_path: Path, files: dict[str, str]) -> Path:
         ("mount /Users/someone/data here", "absolute home path"),
         ("mount C:\\Users\\someone\\data here", "absolute home path"),
         ("mount C:\\\\Users\\\\someone in JSON", "absolute home path"),
+        ("cache in /root/.cache/uv", "absolute system path"),
+        ("wrote /tmp/run/out.json", "absolute system path"),
+        ('{"path": "/tmp/run"}', "absolute system path"),
         (KEY_HEADER, "private key header"),
         (f"logged in as {USER.upper()}", "username"),
         (f"built on {HOST}", "hostname"),
@@ -215,6 +218,15 @@ def repository(tmp_path: Path, files: dict[str, str]) -> Path:
 def test_scan_finds_each_planted_pattern(tmp_path: Path, content: str, rule: str) -> None:
     root = repository(tmp_path, {"docs/note.md": f"first line\n{content}\n"})
     assert [str(f) for f in security.scan_identity(root, (USER, HOST))] == [f"docs/note.md:2: {rule}"]
+
+
+@pytest.mark.parametrize(
+    "content",
+    ["data/tmp/run/x", "reports/root/x", "./tmp/x", "~/tmp/x", "<repo>/tmp/x", "my-tmp/x", "/tmpfile", "/rooted"],
+)
+def test_scan_leaves_relative_paths_and_near_misses_alone(tmp_path: Path, content: str) -> None:
+    root = repository(tmp_path, {"a.md": f"{content}\n"})
+    assert security.scan_identity(root, (USER, HOST)) == []
 
 
 def test_scan_reports_where_but_never_the_matched_text(tmp_path: Path) -> None:
