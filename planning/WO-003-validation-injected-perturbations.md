@@ -28,6 +28,9 @@ Find out whether LPSF recovers known, injected normal-offset errors on **real** 
    - (a) depth profiles of mean intensity and band-passed variance, giving the measured **sheet thickness, gap and wrap pitch** per crop; set **W_max** = the median sheet thickness, capped at 0.8 × the median pitch;
    - (b) the through-depth correlation r(d) for d = 1–3, in-sheet versus in-gap (void) layers, to separate the point-spread function from material structure (DR-009);
    - (c) the fraction of gap-layer patches with ρ above the in-sheet 25th percentile, as a fixed-pattern artifact indicator.
+   - (d) **Processing metadata (DR-013):** record the volume's phase-retrieval and sharpening parameters (`.zattrs`, metadata files or the data browser). If none are published, record that, and treat the `angelotti2026` BM18 protocol as an assumption.
+   - (e) **3-D autocorrelation in void regions:** in-plane and in depth, against in-sheet. This is the decisive test of processing noise against material decorrelation (DR-013 correction to DR-011).
+   - (f) **Approval masks (read-only check):** do the published PHerc0139 / PHerc1667 surfaces include an approval mask (`angelotti2026`)? Record the path, format and coverage. Nothing in the gates changes.
 4. **Record before going on.** Log C, the timings, the placements, W_max and the diagnostics in the provenance log. No LPSF shift or offset numbers are computed in step 0.
 
 ## 4a. Feasibility pilot: go/no-go before the main study (DR-011)

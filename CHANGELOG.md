@@ -8,6 +8,7 @@ Each entry says **what** changed, **why**, and **what it builds on** (citation k
 ## [Unreleased]
 
 ### Added
+- 2026-11-01 — DR-013: intake of `angelotti2026` (arXiv:2606.29085) and `parsons2023`. Adopted: the BM18 protocol (Paganin δ/β = 1000, unsharp c = 4 / σ = 1.2 px), the recto-surface mesh convention, approval masks as a possible label source, and the 65-layer official render. **Correction to DR-011's prior:** depth decorrelation may be processing-shaped noise, not material; the void-region test is decisive. WO-003 step 0 (d–f) added; WO-006 Addendum 1 (processed-noise mode).
 - 2026-11-01 — Planner review of WO-002: DR-011 (accepted, with the failed P1/P2 and Σ criteria kept on record; validity envelope; depth-decorrelation pull as the decisive real-data risk); DR-012 (upstream contribution policy); WO-006 (Σ calibration, decorrelation-gain diagnostic, across-fibre directional estimate). Builds on: `reports/2026-11-wo002/report.md`.
 - 2026-11-01 — `docs/security.md` (threat model, rules R1–R5, audit log), DR-010, and WO-005 (security hardening; must merge before WO-003). `CLAUDE.md` gains security as hard rule 0. Why: the public repository must not expose secrets or machine identity. A full-history audit found no secrets.
 - 2026-11-01 — WO-002 (with addenda 1 and 2): the LPSF estimator and the synthetic-sheet harness.
