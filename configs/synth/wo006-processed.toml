@@ -1,0 +1,28 @@
+# WO-006 addendum 1: processed noise, against white noise on the same grid. Run after kappa and f are frozen.
+# num_slices = 41 gives void layers beyond the 20-voxel sheet, which gain_map needs to measure noise on its own.
+# Run: uv run vch synth run --config configs/synth/wo006-processed.toml
+name = "wo006-processed"
+seed = 2029
+
+[[sweep]]
+experiment = "orientation"
+estimator = ["pc", "lk"]
+texture = "a1"
+noise = ["processed", "white"]
+snr = [6, 2]
+num_slices = 41
+fibre_tilt_deg = [0, 15, 30, 45, 60, 75, 90]
+theta_deg = [1, 2, 5, 10]
+seed_id = [5, 6]
+
+[[sweep]]
+experiment = "orientation"
+estimator = ["pc", "lk"]
+texture = "realistic"
+corr_length = [2.0, 4.3, 8.0]
+noise = ["processed", "white"]
+snr = [6, 2]
+num_slices = 41
+fibre_tilt_deg = [0, 15, 30, 45, 60, 75, 90]
+theta_deg = [1, 2, 5, 10]
+seed_id = [5, 6]

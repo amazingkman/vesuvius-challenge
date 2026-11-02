@@ -33,6 +33,7 @@ WHY = {
     "layers": "Two sheets: correlation in gaps and across interfaces (P6); the window must not reach the next wrap.",
     "aperture": "Oriented fibres: predicted Sigma vs empirical scatter (P5), per layer and summed.",
     "crosscheck": "Fast path vs skimage vs villa _phase_correlate on exactly shifted patches.",
+    "orientation": "Fibres against tilt: full and directional estimates and the predicted decorrelation gain.",
 }
 
 

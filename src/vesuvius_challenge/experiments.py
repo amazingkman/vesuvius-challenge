@@ -35,6 +35,8 @@ def make_texture(p: dict) -> syn.Texture:
         spread_deg=spread,
     )
     if mode == "realistic":
+        if "corr_length" in p:
+            common["corr_length"] = float(p["corr_length"])
         return syn.realistic_texture(float(p.get("realistic_snr", 6.0)), **common)
     return syn.Texture(mode=mode, **common)
 
@@ -45,6 +47,7 @@ def make_sheet(p: dict) -> syn.Sheet:
         thickness=float(p.get("thickness", 20.0)),
         snr=None if snr in (None, "none", "inf") else float(snr),
         gap=None if p.get("gap") in (None, "none") else float(p["gap"]),
+        noise=p.get("noise", "white"),
     )
 
 
@@ -368,6 +371,90 @@ def exp_aperture(p: dict, seed: int) -> Result:
     return row, []
 
 
+def exp_orientation(p: dict, seed: int) -> Result:
+    """WO-006: full and directional estimates and the gain map on one stack, at a set fibre-to-tilt angle.
+
+    ``fibre_tilt_deg`` is the angle in the mesh frame between the fibres and the tilt, which runs along +u. One row per
+    patch holds the raw variances, so that calibration can be fitted and evaluated from saved runs.
+    """
+    angle = float(p["fibre_tilt_deg"])
+    q = dict(p, fibre_deg=syn.GENERIC_ROTATION_DEG + angle)
+    params = make_params(q)
+    tex, sheet = make_texture(q), make_sheet(q)
+    theta, dd = float(p["theta_deg"]), float(p.get("slice_step", 1.0))
+    pts = syn.tilted_points((int(p.get("length", 1056)), params.patch), theta, 0.0)
+    case = syn.make_case(None, tex, sheet, int(p.get("num_slices", 21)), dd, seed=seed, points=pts)
+    full = lpsf.estimate(case.layers, dd, params, metric=case.metric)
+    side = lpsf.estimate(case.layers, dd, replace(params, directional=True), metric=case.metric)
+    gains = lpsf.gain_map(case.layers, full)
+    truth = lpsf.patch_average(case.grad_h, full)
+    g, cov = full.grad, full.grad_cov
+    tilt = np.array([0.0, 1.0])  # (v, u)
+    # The best-observed direction of each patch. For rank 2 the second direction is observed too.
+    evals, evecs = np.linalg.eigh(side.information)
+    seen = evecs[..., 1]
+    rank = np.sum(evals > 0, axis=-1)
+    sign = np.sign(np.sum(seen * truth, axis=-1))
+    seen = seen * np.where(sign == 0, 1.0, sign)[..., None]
+    side_g = side.grad
+    # Raw variance of the gradient along that direction; this mesh is isometric, so the metric adds nothing.
+    side_var = np.where(evals[..., 1] > 0, 1 / np.where(evals[..., 1] > 0, evals[..., 1], 1.0), np.inf) / dd**2
+    along = np.stack([np.sin(gains.fibre_angle), np.cos(gains.fibre_angle)], -1)
+    cos2 = (along @ tilt) ** 2
+    ell2_true = cos2 * gains.ell_along**2 + (1 - cos2) * gains.ell_across**2
+    with np.errstate(divide="ignore", invalid="ignore"):
+        gain_true = 1 - 2 * ell2_true / gains.length**2
+    ok = full.valid
+    measured = float(g[..., 1][ok].mean() / truth[..., 1][ok].mean()) if ok.any() else np.nan
+    row = {
+        "truth_window": float(truth[..., 1][ok].mean()) if ok.any() else np.nan,
+        "gain_measured": measured,
+        "gain_predicted": float(np.nanmean(gains.gain[ok])) if ok.any() else np.nan,
+        "gain_predicted_true_tilt": float(np.nanmean(gain_true[ok])) if ok.any() else np.nan,
+        "valid_fraction": float(ok.mean()),
+        "n_patches": int(ok.sum()),
+    }
+    details = []
+    for i in range(ok.size):
+        r, c = np.unravel_index(i, ok.shape)
+        details.append(
+            {
+                "patch": int(i),
+                "valid": bool(ok[r, c]),
+                "g_v": float(g[r, c, 0]),
+                "g_u": float(g[r, c, 1]),
+                "truth_v": float(truth[r, c, 0]),
+                "truth_u": float(truth[r, c, 1]),
+                "var_vv": float(cov[r, c, 0, 0]),
+                "var_vu": float(cov[r, c, 0, 1]),
+                "var_uu": float(cov[r, c, 1, 1]),
+                "rho": float(full.rho[r, c]),
+                "side_valid": bool(side.valid[r, c]),
+                "side_rank": int(rank[r, c]),
+                "side_e_v": float(seen[r, c, 0]),
+                "side_e_u": float(seen[r, c, 1]),
+                "side_g_v": float(side_g[r, c, 0]),
+                "side_g_u": float(side_g[r, c, 1]),
+                "side_var": float(side_var[r, c]),
+                "L": float(gains.length[r, c]),
+                "ell_along": float(gains.ell_along[r, c]),
+                "ell_across": float(gains.ell_across[r, c]),
+                "fibre_angle": float(gains.fibre_angle[r, c]),
+                "gain_pred": float(gains.gain[r, c]),
+                "gain_pred_true": float(gain_true[r, c]),
+                "gain_along": float(gains.gain_along[r, c]),
+                "gain_across": float(gains.gain_across[r, c]),
+                "flagged": bool(gains.flagged[r, c]),
+                "noise_share": float(gains.noise_share[r, c]),
+                "L_void": float(gains.length_void[r, c]),
+                "L_material": float(gains.length_material[r, c]),
+                "shrink": float(gains.shrink[r, c]),
+                "gain_material": float(gains.gain_material[r, c]),
+            }
+        )
+    return row, details
+
+
 def exp_crosscheck(p: dict, seed: int) -> Result:
     """Fast path vs skimage (upsample 100) vs villa ``_phase_correlate`` on exactly shifted patches."""
     from skimage.registration import phase_cross_correlation
@@ -419,6 +506,7 @@ EXPERIMENTS: dict[str, Callable[[dict, int], Result]] = {
     "layers": exp_layers,
     "aperture": exp_aperture,
     "crosscheck": exp_crosscheck,
+    "orientation": exp_orientation,
 }
 
 
@@ -454,7 +542,11 @@ def expand(config: dict) -> list[dict]:
                 cases.append(case)
     for i, case in enumerate(cases):
         case["case_id"] = i
-        case["seed"] = base_seed * 1000 + i
+        if "seed_id" in case:
+            # Named splits: seed_id sets a decimal place of its own, so two splits can never share a seed.
+            case["seed"] = base_seed * 10**7 + int(case["seed_id"]) * 10**5 + i
+        else:
+            case["seed"] = base_seed * 1000 + i
     return cases
 
 

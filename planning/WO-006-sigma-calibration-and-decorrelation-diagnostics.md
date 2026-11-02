@@ -1,6 +1,6 @@
 # WO-006 — Σ calibration, decorrelation-gain diagnostic, across-fibre directional estimate
 
-Executor: **Cloud** (synthetic only)  Depends on: WO-002 merged; WO-005 merged or in parallel (no file overlap except README/CHANGELOG)  Status: issued 2026-11-01 (DR-011). Must merge before the WO-003 pilot.
+Executor: **VSCode** (synthetic only)  Depends on: WO-002 merged; WO-005 merged or in parallel (no file overlap except README/CHANGELOG)  Status: issued 2026-11-01 (DR-011). Must merge before the WO-003 pilot.
 
 ## 1. Objective
 
