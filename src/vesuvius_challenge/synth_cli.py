@@ -17,6 +17,7 @@ import typer
 
 from vesuvius_challenge import experiments, ui
 from vesuvius_challenge.runrecord import RunRecord, utc_now
+from vesuvius_challenge.security import repo_path
 
 synth_app = typer.Typer(
     help="Synthetic-sheet harness for LPSF (WO-002): run sweeps, build reports.", no_args_is_help=True
@@ -109,7 +110,7 @@ def run(
     )
     record = RunRecord(
         "synth-run",
-        {"config_path": str(config), "config": spec, "workers": workers, "only": only, "n_cases": len(cases)},
+        {"config_path": repo_path(config), "config": spec, "workers": workers, "only": only, "n_cases": len(cases)},
         seed=int(spec.get("seed", 2026)),
     )
     rows: list[dict] = []
@@ -196,7 +197,7 @@ def run(
         "per_experiment": counts,
         "compute": {"cpus": os.cpu_count(), "workers": workers, "gpu": None},
     }
-    record.outputs = [str(p) for p in paths]
+    record.outputs = [repo_path(p) for p in paths]
     record_path = record.finish(record_path, partial=partial)
     ui.summary(
         "Synthetic sweep",
@@ -233,10 +234,10 @@ def report(
         {"runs": ", ".join(str(r) for r in run_dirs)},
         out,
     )
-    record = RunRecord("synth-report", {"run_dirs": [str(r) for r in run_dirs]})
+    record = RunRecord("synth-report", {"run_dirs": [repo_path(r) for r in run_dirs]})
     written, verdicts = synth_report.build(run_dirs, out)
     record.results = {"verdicts": verdicts}
-    record.outputs = [str(p) for p in written]
+    record.outputs = [repo_path(p) for p in written]
     record_path = record.finish(out / "report.run.json")
     ui.summary(
         "Synthetic report",

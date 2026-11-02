@@ -14,6 +14,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from vesuvius_challenge.security import sanitize
+
 PACKAGE_DIR = Path(__file__).parent
 TRACKED_PACKAGES = ("numpy", "pyarrow", "rich", "scipy", "tifffile", "typer", "vesuvius", "zarr")
 
@@ -82,12 +84,18 @@ class RunRecord:
     results: dict[str, Any] = field(default_factory=dict)
     outputs: list[str] = field(default_factory=list)
 
+    def __post_init__(self) -> None:
+        # Fail before the work starts, not after it, if the settings cannot be recorded safely.
+        sanitize([self.params, self.reproduce])
+
     def finish(self, path: Path, partial: bool = False) -> Path:
-        """Stamp the end time and write the record as JSON."""
+        """Stamp the end time and write the sanitized record as JSON."""
         self.finished_at = utc_now()
         self.partial = partial
+        # The JSON round trip turns every value into text first, so `sanitize` sees all of it.
+        record = sanitize(json.loads(json.dumps(asdict(self), default=str)))
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(asdict(self), indent=2, sort_keys=True, default=str) + "\n")
+        path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
         return path
 
 

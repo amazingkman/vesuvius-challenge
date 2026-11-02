@@ -14,7 +14,7 @@ from xml.sax.saxutils import escape
 
 import numpy as np
 
-from vesuvius_challenge import fetch, render, survey
+from vesuvius_challenge import fetch, render, security, survey
 from vesuvius_challenge.s3 import Bucket, parse_listing
 
 
@@ -339,6 +339,41 @@ def check_cubic_resampler() -> None:
     assert np.abs(got - want).max() < 1e-3 * np.abs(want).max(), np.abs(got - want).max()
 
 
+def check_sanitize() -> None:
+    from hypothesis import given
+    from hypothesis import strategies as st
+
+    user, host = security.machine_identity()
+    home = str(Path.home())
+    suffix = st.text("abcdefgh0123456789_-", min_size=1, max_size=12)
+
+    @given(suffix, suffix)
+    def scrubs_identity(first: str, second: str) -> None:
+        clean = security.sanitize({f"{home}/{first}": [f"{user} on {host}", f"{security.REPO_ROOT}/{second}"]})
+        text = json.dumps(clean)
+        assert home not in text and str(security.REPO_ROOT) not in text
+        assert security.sanitize(clean) == clean, "sanitizing twice must change nothing"
+
+    scrubs_identity()
+
+
+def check_scanner_finds_planted_lines() -> None:
+    """`scan_bytes` against a slow reference: a plain search, one line at a time."""
+    from hypothesis import given
+    from hypothesis import strategies as st
+
+    planted = b"/ho" + b"me/x"
+    rules = security.identity_rules("nobody-here", "no-such-host")
+
+    @given(st.lists(st.sampled_from([b"clean text", b"", planted, b"also clean"]), max_size=20))
+    def finds_every_line(lines: list[bytes]) -> None:
+        expected = [number for number, line in enumerate(lines, 1) if planted in line]
+        found = [finding.line for finding in security.scan_bytes("f", b"\n".join(lines), rules)]
+        assert sorted(found) == expected
+
+    finds_every_line()
+
+
 CHECKS: list[tuple[str, Callable[[], None]]] = [
     ("listing parser, generated pages", check_listing_parser),
     ("listing pagination against a fake bucket", check_listing_pagination),
@@ -348,6 +383,8 @@ CHECKS: list[tuple[str, Callable[[], None]]] = [
     ("tifxyz write/read round trip through vesuvius", check_tifxyz_round_trip),
     ("on-surface layer against the renderer's offset list", check_on_surface_layer),
     ("crop flag parsing, generated values", check_crop_parsing),
+    ("sanitize removes generated identity and is idempotent", check_sanitize),
+    ("identity scan against a line-by-line reference", check_scanner_finds_planted_lines),
     ("LPSF phase correlation vs skimage, generated patches", check_phase_correlation_vs_skimage),
     ("villa _phase_correlate sign convention", check_villa_convention),
     ("integration of analytic gradient fields", check_integration_analytic),

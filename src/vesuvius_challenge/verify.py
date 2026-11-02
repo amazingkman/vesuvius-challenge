@@ -10,6 +10,7 @@ import tifffile
 from scipy.ndimage import map_coordinates
 
 from vesuvius_challenge.render import Crop
+from vesuvius_challenge.security import FIGURE_METADATA
 
 
 def pearson(a: np.ndarray, b: np.ndarray) -> float:
@@ -108,6 +109,6 @@ def save_layer_figure(layers: list[Path], k0: int, path: Path) -> Path:
         axis.set_title(f"layer {k} ({k - k0:+d} from k0)")
         axis.set_axis_off()
     path.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(path, dpi=170)
+    figure.savefig(path, dpi=170, metadata=FIGURE_METADATA)
     plt.close(figure)
     return path

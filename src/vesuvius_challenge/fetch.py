@@ -10,6 +10,7 @@ from typing import Any
 
 from vesuvius_challenge.runrecord import utc_now
 from vesuvius_challenge.s3 import Bucket, S3Object
+from vesuvius_challenge.security import sanitize
 from vesuvius_challenge.survey import MeshVariant, choose_primary, segment_id
 
 MANIFEST = "MANIFEST.json"
@@ -95,7 +96,7 @@ def build_manifest(
 
 def write_manifest(manifest: dict[str, Any], path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    path.write_text(json.dumps(sanitize(manifest), indent=2, sort_keys=True) + "\n")
     return path
 
 
