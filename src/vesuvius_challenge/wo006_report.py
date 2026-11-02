@@ -156,6 +156,7 @@ def calibration_tables(patches: pd.DataFrame, kappa: float, floor: float) -> dic
         "full_mode_angle": summary(full, ["mode", "fibre_tilt_deg"]),
         "side_mode": side_summary(["mode"]),
         "side_mode_angle": side_summary(["mode", "fibre_tilt_deg"]),
+        "side_mode_theta": side_summary(["mode", "theta_deg"]),
         "side_mode_estimator_angle": side_summary(["mode", "estimator", "fibre_tilt_deg"]),
         "side_rank": patches[patches["side_valid"]].groupby("mode")["side_rank"].mean().reset_index(),
     }
@@ -210,6 +211,23 @@ def gain_table(patches: pd.DataFrame) -> pd.DataFrame:
     table["error"] = (table["predicted"] - table["measured"]).abs()
     table["error_true_tilt"] = (table["predicted_true_tilt"] - table["measured"]).abs()
     return table
+
+
+def gain_breakdown(gains: pd.DataFrame) -> pd.DataFrame:
+    """Where the gain prediction fails: share of in-range cells within tolerance, by L."""
+    rows = []
+    for mode, group in gains[gains["in_range"]].groupby("mode"):
+        rows.append(
+            {
+                "mode": mode,
+                "cells": len(group),
+                "within_tolerance": float((group["error"] <= GAIN_TOLERANCE).mean()),
+                "within_tolerance_true_tilt": float((group["error_true_tilt"] <= GAIN_TOLERANCE).mean()),
+                "worst": float(group["error"].max()),
+                "flagged_patches": float(group["flagged"].mean()),
+            }
+        )
+    return pd.DataFrame(rows)
 
 
 def verdicts(tables: dict[str, pd.DataFrame], slopes: pd.DataFrame, gains: pd.DataFrame) -> dict[str, dict[str, Any]]:
@@ -297,22 +315,27 @@ def processed_tables(patches: pd.DataFrame, kappa: float, floor: float) -> dict[
         {"A1 (noise only)": pd.Series(error), "realistic (material)": pd.Series(material_error)}
     ).reset_index(names="mean absolute gain error")
 
+    # Exploratory, chosen after seeing the first table: L = 8 is the hard pair, because noise alone can bring A1's
+    # apparent L down to a similar value. L_material / L is near 1 when decorrelation is material.
     rows = []
     processed = patches[patches["noise"] == "processed"]
-    for snr, group in processed.groupby("snr"):
-        noise_only = group[group["mode"] == "a1"]
-        decorrelating = group[group["mode"] == "L4.3"]
-        both = pd.concat([noise_only, decorrelating])
-        labels = both["mode"].to_numpy() == "L4.3"
+    for (snr, other), group in processed.groupby(["snr", "mode"]):
+        if other == "a1":
+            continue
+        noise_only = processed[(processed["snr"] == snr) & (processed["mode"] == "a1")]
+        both = pd.concat([noise_only, group])
+        labels = both["mode"].to_numpy() == other
         length = np.nan_to_num(both["L"].to_numpy(), nan=1e6, posinf=1e6)
         material_length = np.nan_to_num(both["L_material"].to_numpy(), nan=1e6, posinf=1e6)
         isotropy = length**2 / (2 * both["ell_along"].to_numpy() * both["ell_across"].to_numpy())
         rows.append(
             {
                 "snr": snr,
+                "material mode": other,
                 "AUROC, 1 / L": auroc(-length, labels),
                 "AUROC, 1 / L_material": auroc(-material_length, labels),
-                "AUROC, isotropy L^2 / 2 l l": auroc(-isotropy, labels),
+                "AUROC, L / L_material": auroc(length / np.maximum(material_length, 1e-9), labels),
+                "AUROC, isotropy": auroc(-isotropy, labels),
                 "AUROC, noise share": auroc(-both["noise_share"].fillna(1.0).to_numpy(), labels),
             }
         )
@@ -339,7 +362,7 @@ def figure_coverage(tables: dict[str, pd.DataFrame], side: pd.DataFrame, out: Pa
                 markersize=6,
                 label=mode,
             )
-        axis.axhspan(*COVERAGE_BAND, color="#d9d9d9", alpha=0.5, linewidth=0)
+        axis.axhspan(*COVERAGE_BAND, color="#d9d9d9", alpha=0.5, linewidth=0, zorder=0)
         axis.set_title(title)
         axis.set_xlabel("Fibre-to-tilt angle (degrees)")
         axis.set_xticks(range(0, 91, 15))
@@ -358,14 +381,16 @@ def figure_gain(gains: pd.DataFrame, out: Path) -> Path:
             axis.scatter(
                 part["measured"].clip(-1.2, 1.3),
                 part[column].clip(-1.2, 1.3),
-                s=18,
+                s=22,
+                zorder=3,
                 color=SERIES[index + 2],
                 marker=MARKERS[index + 2],
                 label=mode,
                 linewidths=0,
             )
         axis.plot(span, span, color="#6b6b6b", linewidth=1)
-        axis.fill_between(span, span - GAIN_TOLERANCE, span + GAIN_TOLERANCE, color="#d9d9d9", alpha=0.5, linewidth=0)
+        band = {"color": "#d9d9d9", "alpha": 0.5, "linewidth": 0, "zorder": 0}
+        axis.fill_between(span, span - GAIN_TOLERANCE, span + GAIN_TOLERANCE, **band)
         axis.set_title(title)
         axis.set_xlabel("Measured gain")
     axes[0].set_ylabel("Predicted gain")
@@ -388,7 +413,7 @@ def figure_slopes(slopes: pd.DataFrame, out: Path) -> Path:
             marker=MARKERS[1],
             label="Directional, across fibres",
         )
-        axis.axhspan(*SLOPE_BAND, color="#d9d9d9", alpha=0.5, linewidth=0)
+        axis.axhspan(*SLOPE_BAND, color="#d9d9d9", alpha=0.5, linewidth=0, zorder=0)
         axis.axhline(0, color="#6b6b6b", linewidth=1)
         axis.set_title(f"Estimator {estimator}, L = 4.3")
         axis.set_xlabel("Fibre-to-tilt angle (degrees)")
@@ -469,17 +494,21 @@ def build(calibration: Path, evaluation_dir: Path, processed_dir: Path, out: Pat
         md_table(tables["side_mode"]),
         "## Directional estimate by mode and fibre angle",
         md_table(tables["side_mode_angle"]),
+        "## Directional estimate by mode and tilt",
+        md_table(tables["side_mode_theta"]),
         "## Mean observed rank",
         md_table(tables["side_rank"]),
         "## Slope ratio, L = 4.3",
         md_table(slopes[slopes["mode"] == "L4.3"]),
+        "## Gain prediction by L, cells with measured gain in range",
+        md_table(gain_breakdown(gains)),
         "## Worst gain predictions in range",
         md_table(worst),
         "## Processed noise: summary",
         md_table(processed["summary"]),
         "## Processed noise: gain error with and without the void correction",
         md_table(processed["errors"]),
-        "## Processed noise: patch-level separation of noise from material decorrelation",
+        "## Processed noise: patch-level separation of noise from material decorrelation (exploratory)",
         md_table(processed["separation"]),
     ]
     summary = out / "summary.md"
@@ -495,6 +524,7 @@ def build(calibration: Path, evaluation_dir: Path, processed_dir: Path, out: Pat
         "tables": {name: table.to_dict("records") for name, table in tables.items()},
         "slopes": slopes.to_dict("records"),
         "gains": gains.to_dict("records"),
+        "gain_breakdown": gain_breakdown(gains).to_dict("records"),
         "processed": {name: table.to_dict("records") for name, table in processed.items()},
     }
     tables_path.write_text(json.dumps(payload, indent=1, default=float) + "\n")
