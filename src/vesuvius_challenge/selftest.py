@@ -374,6 +374,46 @@ def check_scanner_finds_planted_lines() -> None:
     finds_every_line()
 
 
+def check_gain_tensor() -> None:
+    """`gain_map`'s first-order tensor against a numerical maximum of the correlation model."""
+    from hypothesis import given, settings
+    from hypothesis import strategies as st
+    from scipy import optimize
+
+    @settings(max_examples=30, deadline=None)
+    @given(st.floats(1.2, 5.0), st.floats(1.0, 2.0), st.floats(4.0, 30.0), st.floats(0.0, 3.1), st.floats(0.0, 3.1))
+    def matches(along: float, across: float, length: float, fibre: float, azimuth: float) -> None:
+        e = np.array([np.cos(fibre), np.sin(fibre)])
+        n = np.array([-e[1], e[0]])
+        tensor = np.outer(e, e) / along**2 + np.outer(n, n) / across**2
+        tilt = np.array([np.cos(azimuth), np.sin(azimuth)])
+        tan = np.tan(np.deg2rad(0.05))
+
+        def negative(shift: np.ndarray) -> float:
+            x = shift - tan * tilt
+            return 0.5 * float(x @ tensor @ x) + (1.0 + float(shift @ tilt) * tan) ** 2 / length**2
+
+        found = optimize.minimize(negative, np.zeros(2), tol=1e-12).x
+        expected = (np.eye(2) - 2 / length**2 * np.linalg.inv(tensor)) @ tilt * tan
+        assert np.abs(found - expected).max() < 2e-3 * tan * (1 + along**2)
+
+    matches()
+
+
+def check_processing_transfer() -> None:
+    """The unsharp mask's frequency response against the mask applied with a real-space Gaussian."""
+    from scipy import ndimage
+
+    from vesuvius_challenge.synthetic import processing_transfer
+
+    image = np.random.default_rng(2026).standard_normal((48, 48, 48))
+    k = 2 * np.pi * np.fft.fftfreq(48)
+    k2 = k[:, None, None] ** 2 + k[None, :, None] ** 2 + k[None, None, :] ** 2
+    fast = np.real(np.fft.ifftn(np.fft.fftn(image) * processing_transfer(k2, 0.0, 4.0, 1.2)))
+    slow = 5.0 * image - 4.0 * ndimage.gaussian_filter(image, 1.2, mode="wrap", truncate=8.0)
+    assert np.std(fast - slow) < 0.02 * np.std(slow)
+
+
 CHECKS: list[tuple[str, Callable[[], None]]] = [
     ("listing parser, generated pages", check_listing_parser),
     ("listing pagination against a fake bucket", check_listing_pagination),
@@ -385,6 +425,8 @@ CHECKS: list[tuple[str, Callable[[], None]]] = [
     ("crop flag parsing, generated values", check_crop_parsing),
     ("sanitize removes generated identity and is idempotent", check_sanitize),
     ("identity scan against a line-by-line reference", check_scanner_finds_planted_lines),
+    ("gain tensor against a numerical correlation maximum", check_gain_tensor),
+    ("processed-noise filter against a real-space unsharp mask", check_processing_transfer),
     ("LPSF phase correlation vs skimage, generated patches", check_phase_correlation_vs_skimage),
     ("villa _phase_correlate sign convention", check_villa_convention),
     ("integration of analytic gradient fields", check_integration_analytic),

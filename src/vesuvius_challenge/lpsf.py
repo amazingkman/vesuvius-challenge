@@ -46,6 +46,7 @@ from scipy.sparse.linalg import spsolve
 Aggregate = Literal["rho", "information"]
 Estimator = Literal["pc", "lk"]
 FFT_WORKERS = -1  # scipy.fft threads; sweeps running one case per process set this to 1
+RANK_TOLERANCE = 1e-9  # an eigenvalue this far below the largest is rounding error, not an observed direction
 
 
 @dataclass(frozen=True)
@@ -450,7 +451,8 @@ class Field:
         """Number of directions observed per patch: 2 for a full estimate, 0 to 2 for a directional one."""
         if self.information is None:
             return np.where(self.valid, 2, 0)
-        return np.sum(np.linalg.eigvalsh(self.information) > 0, axis=-1)
+        evals = np.linalg.eigvalsh(self.information)
+        return np.sum(evals > RANK_TOLERANCE * evals[..., -1:], axis=-1) * (evals[..., -1] > 0)
 
     @property
     def zstar(self) -> np.ndarray:
@@ -655,7 +657,7 @@ def _estimate_lk(tex_view, amp_view, tex_coef, amp_coef, kk, rr, cc, rows, cols,
             energy = np.einsum("na,nab,nb->n", across, info, across)
             info = energy[:, None, None] * np.einsum("na,nb->nab", across, across)
             rhs = np.einsum("na,nb,nb->na", across, across, rhs)
-            meat = np.einsum("na,nb,nc,ncd,nd,ne->nae", across, across, across, meat, across, across)
+            meat = np.einsum("na,nc,ncd,nd,ne->nae", across, across, meat, across, across)
         info_sum = np.zeros((n_rc, 2, 2))
         rhs_sum = np.zeros((n_rc, 2))
         np.add.at(info_sum, patch_id, info)
@@ -792,10 +794,9 @@ def estimate(
         cov = np.where(valid[..., None, None], cov_flat.reshape(*shape_rc, 2, 2), cap * np.eye(2))
         if params.directional:
             # LK's patch shift has no along-fibre part by construction. Its sandwich covariance is what is reported.
-            with np.errstate(divide="ignore", invalid="ignore"):
-                evals, evecs = np.linalg.eigh(cov)
-                seen = evals > 0
-                inverse = np.where(seen, 1 / np.where(seen, evals, 1.0), 0.0)
+            evals, evecs = np.linalg.eigh(cov)
+            seen = evals > RANK_TOLERANCE * np.maximum(evals[..., -1:], 1e-300)
+            inverse = np.where(seen, 1 / np.where(seen, evals, 1.0), 0.0)
             information = np.einsum("rcij,rcj,rckj->rcik", evecs, inverse, evecs)
             information = np.where(valid[..., None, None], information, 0.0)
             cov = np.einsum("rcij,rcj,rckj->rcik", evecs, np.where(seen, evals, cap), evecs)

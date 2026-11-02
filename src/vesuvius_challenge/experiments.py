@@ -393,12 +393,12 @@ def exp_orientation(p: dict, seed: int) -> Result:
     # The best-observed direction of each patch. For rank 2 the second direction is observed too.
     evals, evecs = np.linalg.eigh(side.information)
     seen = evecs[..., 1]
-    rank = np.sum(evals > 0, axis=-1)
+    rank = side.observed_rank()
     sign = np.sign(np.sum(seen * truth, axis=-1))
     seen = seen * np.where(sign == 0, 1.0, sign)[..., None]
     side_g = side.grad
     # Raw variance of the gradient along that direction; this mesh is isometric, so the metric adds nothing.
-    side_var = np.where(evals[..., 1] > 0, 1 / np.where(evals[..., 1] > 0, evals[..., 1], 1.0), np.inf) / dd**2
+    side_var = np.where(rank > 0, 1 / np.where(rank > 0, evals[..., 1], 1.0), np.inf) / dd**2
     along = np.stack([np.sin(gains.fibre_angle), np.cos(gains.fibre_angle)], -1)
     cos2 = (along @ tilt) ** 2
     ell2_true = cos2 * gains.ell_along**2 + (1 - cos2) * gains.ell_across**2
