@@ -197,3 +197,36 @@ The full-text search of villa at `d57c28e` judged all 2,483 hits (`reports/2026-
 2. **No PR to villa without the team's prior interest.** Upstream integration (BACKLOG) starts with a Discord conversation that shows the Annotation Team or maintainers want it. Until then, our tools read and write their formats standalone.
 3. Bug reports go to existing issues, with a minimal reproduction, only for tools the team actively uses. For example, the `vc_render_tifxyz` skip-on-existing-outputs behaviour is reported only if the team confirms it affects them.
 4. Our PRs, when invited, are small, human-reviewed by Kevin, and disclose AI assistance.
+
+---
+
+## DR-013 — 2026-11-01 — Literature intake (Angelotti et al. 2026; Parsons et al. 2023): correction to DR-011 and new checks
+
+**Sources** (T1; Kevin supplied both PDFs; the Planner read them 2026-11-01):
+- Angelotti, Parsons, Nicolardi, Nader, … Seales, *Complete virtual unwrapping and reading of a rolled Herculaneum papyrus*, arXiv:2606.29085v1, 27 Jun 2026 (`angelotti2026`);
+- Parsons, Parker, Chapman, Hayashida, Seales, *EduceLab-Scrolls: Verifiable Recovery of Text from Herculaneum Papyri using X-ray CT*, arXiv:2304.02084v4, 20 May 2024 (`parsons2023`).
+
+**Facts adopted** (with locations in the source):
+1. **The BM18 scan protocol includes reconstruction filtering.** For PHerc. 1667, Paris 3 and Paris 4: 2.4 µm voxels, 0.22 m propagation, 78 keV, **single-distance Paganin phase retrieval with δ/β = 1000**, then an **unsharp mask, c = 4, σ = 1.2 px**. The calculated diffraction limit is 2.72 µm for the 2.4 µm pixel (`angelotti2026` Methods, *Phase retrieval and contrast restoration*; Extended Data Table 1). Our PHerc0139 volume (`…-2.399um-0.2m-78keV-…`) matches this protocol by name. **That it had the same processing is an inference until its metadata confirms it** (WO-003 step 0).
+2. **The Paganin filter is a strong isotropic low-pass at our scale (Planner calculation).** Its characteristic length is √(z·λ·(δ/β)/4π) ≈ 16.7 µm ≈ 7 voxels at 78 keV and 0.22 m. The unsharp mask then boosts structure at about 1–3 voxels. Texture and noise at LPSF's scales are therefore **shaped by processing**. The reconstruction noise is spatially correlated over voxels, not white.
+3. **Meshes trace the recto surface**, defined as the umbilicus-facing side, which is where visible the horizontal-fibre layer, **not the sheet mid-plane** (`angelotti2026` Methods, *Recto-surface annotations*). Official renders use 65 samples at 1-voxel steps, offsets −32…+32 (`angelotti2026` Methods, *Flattening and rendering*).
+4. **The team marks approved regions with an approval mask** ("Regions judged geometrically consistent with a single sheet were marked with an approval mask"). The final PHerc. 1667 reading "is represented by an approved mesh". Reconstructed surfaces are published under CC BY-NC 4.0 via the data browser (`angelotti2026` Methods; Data availability). **This may be the review-label source WO-001 could not find.**
+5. **Other physics:**
+   - Decoherence (blur) from densely packed layers is attributed to graphite and the cellular "small refractive lenses" structure (`angelotti2026` Methods);
+   - carbonization can make sheets bubble or delaminate, which increases the number of apparent layers (`parsons2023` §1);
+   - ink thickness is about 5–10 µm (`parsons2023` §4.1.2, citing earlier work), and phase-retrieved ink deposits in Paris 4 appear 10–20 µm thick (`angelotti2026` Fig. 2).
+6. **Neither paper reports the through-thickness texture correlation length** that DR-011's risk depends on. The question stays empirical.
+
+**Correction to DR-011 item 2.** DR-011 argued that "blur can only raise depth correlation, so WO-001's falling r(d) points to material decorrelation". That ignored the unsharp mask. Processing-shaped correlated noise can produce a smoothly falling r(d) too, and the earlier small-nugget fit (DR-009) cannot rule it out. The two sources predict **different biases**:
+- volume-fixed noise correlates best at zero in-plane shift, so it **shrinks** the gain toward 0;
+- sheet-attached material decorrelation with elongated fibres can **reverse** the sign.
+**The void-region measurement in WO-003 step 0(b) is therefore decisive, not optional**, and the pilot (§4a) measures the gains directly either way. DR-011's decision (pilot gate before WO-003) stands. Only its stated prior is weakened from "probably material" to "material, processing noise, or both; measure".
+
+**Consequences.**
+- **WO-003 step 0 additions:**
+  - record the volume's processing metadata (Paganin and unsharp parameters) from its `.zattrs` / metadata or the data browser;
+  - measure the 3-D autocorrelation (in-plane and depth) in void regions as well as in-sheet;
+  - check whether published PHerc0139 or PHerc1667 surfaces include an approval mask, and record its format and coverage. Read only; nothing changes in the WO-003 gates.
+- **WO-006 addendum:** a synthetic "processed-noise" mode. White noise passes through the documented Paganin filter (δ/β = 1000, z = 0.22 m, 78 keV) and the unsharp mask (c = 4, σ = 1.2 px). Report its effect on gain and Σ calibration alongside the realistic mode.
+- **Method doc:** h is defined relative to the surface the mesh is meant to trace (recto), so an unbiased mesh has z* offset from k₀ by about half the sheet thickness. That offset is expected, not an error. The paired design is unaffected.
+- **Backlog:** if approval masks are published, approved-against-unapproved regions become the tag-based secondary validation dropped in DR-008, reinstated as exploratory.

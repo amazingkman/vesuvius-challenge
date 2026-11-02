@@ -16,3 +16,4 @@ Each item becomes a WO only when its precondition is met.
 | **Report: `vc_render_tifxyz` silently skips when outputs exist** (existing issue or Discord only, per DR-012) | Only if the team confirms it affects them | Found in WO-001; it can make reproduction checks pass falsely. Small, useful upstream report |
 | **Optional history rewrite** (`git filter-repo --replace-text`, then a force-push, plus a GitHub Support request to purge cached PR refs) | Kevin decides (DR-010) | Removes the old username path and hostname from branch history only |
 | **Decorrelation-gain correction** (divide by predicted gain, or a joint model) | WO-006 gain prediction within ±0.25, and the pilot showing it holds on real data | New method; needs its own validation (DR-003) |
+| **Approval-mask validation** (approved vs. unapproved regions, exploratory) | WO-003 step 0(f) finds published approval masks | Replaces the dropped tag-based analysis (DR-008, DR-013) |

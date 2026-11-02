@@ -47,6 +47,20 @@ Make LPSF's uncertainty trustworthy, and make its known real-data failure mode (
 
 Real data; correcting slopes by predicted gain (diagnostic only, so far); changing P, the band-pass or the window rule.
 
+## Addendum 1 — 2026-11-01 (Planner, DR-013; binding)
+
+Add a **processed-noise mode** to the synthetic generator. Generate independent white noise and pass it through:
+- (a) a Paganin filter, 1/(1 + ℓ²k²) with ℓ = √(z·λ·(δ/β)/4π) for δ/β = 1000, z = 0.22 m, E = 78 keV (ℓ ≈ 7 voxels at 2.4 µm), applied in 3-D;
+- (b) an unsharp mask, (1 + c)·I − c·G_σ(I) with c = 4 and σ = 1.2 voxels.
+The noise is fixed in volume coordinates: it does not move with the sheet.
+
+Run the realistic and A1 grids with this noise at SNR 6 and SNR 2 and report:
+- (i) the gain against noise-only expectations, which predict shrinkage toward 0 rather than reversal;
+- (ii) Σ calibration with and without it;
+- (iii) whether `gain_map` can tell processed noise from material decorrelation, using the anisotropy of the depth correlation and comparisons with void regions.
+
+Cite `angelotti2026` for the protocol parameters.
+
 ## 6. Provenance log (executor appends below)
 
 ---
