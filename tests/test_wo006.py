@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import replace
+from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from scipy import ndimage, optimize
 
-from vesuvius_challenge import experiments, lpsf
+from vesuvius_challenge import experiments, lpsf, wo006_report
 from vesuvius_challenge import synthetic as syn
 
 SHEET = syn.Sheet(snr=6.0)
@@ -40,12 +43,24 @@ def test_apply_calibration_adds_the_floor_along_every_direction() -> None:
     assert out == pytest.approx(4 * cov + 0.25 * np.eye(2))
 
 
-def test_defaults_leave_sigma_unchanged() -> None:
+def test_kappa_one_and_no_floor_leave_sigma_unchanged() -> None:
     case = tilted_stack(syn.Texture())
-    field = lpsf.estimate(case.layers, 1.0, metric=case.metric)
+    params = lpsf.Params(sigma_inflation=1.0, sigma_floor=0.0)
+    field = lpsf.estimate(case.layers, 1.0, params, metric=case.metric)
     assert field.calibrated_grad_cov == pytest.approx(field.grad_cov)
     assert field.information is None
     assert field.grad_information is None
+
+
+def test_frozen_calibration_matches_the_saved_fit() -> None:
+    saved = json.loads(Path("reports/2026-11-wo006/calibration.json").read_text())
+    assert lpsf.Params().sigma_inflation == saved["kappa"]
+    assert lpsf.Params().sigma_floor == saved["floor"]
+    assert saved["seed_ids"] == [0, 1, 2, 3, 4]
+
+
+def test_directional_stays_off_by_default() -> None:
+    assert lpsf.Params().directional is False
 
 
 def test_calibrate_recovers_a_known_inflation() -> None:
@@ -308,9 +323,9 @@ def test_directional_integration_gives_a_finite_surface_on_a_rank_zero_mask() ->
     assert out == pytest.approx(zstar, abs=1e-6)
 
 
-def test_full_estimate_is_unchanged_by_the_directional_code() -> None:
+def test_calibration_changes_no_shift_and_no_raw_covariance() -> None:
     case = tilted_stack(syn.Texture())
-    base = lpsf.estimate(case.layers, 1.0, lpsf.Params(), metric=case.metric)
+    base = lpsf.estimate(case.layers, 1.0, lpsf.Params(sigma_inflation=1.0), metric=case.metric)
     calibrated = lpsf.estimate(case.layers, 1.0, lpsf.Params(sigma_inflation=2.0), metric=case.metric)
     assert base.shift == pytest.approx(calibrated.shift)
     assert base.cov == pytest.approx(calibrated.cov)
@@ -398,3 +413,98 @@ def test_orientation_experiment_runs_and_reports_both_estimates(texture: str) ->
     assert row["status"] == "ok", row["error"]
     assert details
     assert all(key in details[0] for key in ("g_u", "truth_u", "var_uu", "side_var", "side_rank", "L", "gain_pred"))
+
+
+# Report logic, on small made-up patch tables
+
+
+def patch_table(mode: str = "a1", n: int = 400, spread: float = 1.0, seed: int = 0) -> pd.DataFrame:
+    rng = np.random.default_rng(seed)
+    truth = np.full(n, 0.1)
+    return pd.DataFrame(
+        {
+            "mode": mode,
+            "estimator": "pc",
+            "theta_deg": 5,
+            "fibre_tilt_deg": 45,
+            "g_u": truth + spread * 0.01 * rng.standard_normal(n),
+            "g_v": 0.0,
+            "truth_u": truth,
+            "truth_v": 0.0,
+            "var_uu": 1e-4,
+            "side_valid": True,
+            "side_rank": 1,
+            "side_var": 1e-4,
+            "side_e_v": 0.0,
+            "side_e_u": 1.0,
+            "side_g_v": 0.0,
+            "side_g_u": truth + spread * 0.01 * rng.standard_normal(n),
+            "side_truth": truth,
+            "side_g": truth + spread * 0.01 * rng.standard_normal(n),
+            "truth_size": truth,
+        }
+    ).assign(error=lambda f: f["g_u"] - f["truth_u"], magnitude=lambda f: f["g_u"].abs())
+
+
+def test_coverage_counts_the_95_percent_interval() -> None:
+    table = wo006_report.full_stats(patch_table(), 1.0, 0.0)
+    assert table["cover"].mean() == pytest.approx(0.95, abs=0.03)
+
+
+def test_a_confident_wrong_sign_needs_both_conditions() -> None:
+    table = patch_table(n=3)
+    table["g_u"] = [-0.5, -0.001, 0.5]
+    table["error"] = table["g_u"] - table["truth_u"]
+    table["magnitude"] = table["g_u"].abs()
+    assert wo006_report.full_stats(table, 1.0, 0.0)["wrong"].tolist() == [True, False, False]
+
+
+def test_directional_sign_is_only_judged_where_the_truth_lies_along_the_direction() -> None:
+    table = patch_table(n=2)
+    table["side_truth"] = [0.0005, 0.1]
+    table["side_g"] = [-0.5, -0.5]
+    stats = wo006_report.side_stats(table, 1.0, 0.0)
+    assert stats["signed"].tolist() == [False, True]
+    assert stats["wrong"].tolist() == [False, True]
+
+
+def test_patches_observing_nothing_are_dropped_not_counted_as_covered() -> None:
+    table = patch_table(n=2)
+    table["side_rank"] = [0, 1]
+    assert len(wo006_report.side_stats(table, 1.0, 0.0)) == 1
+
+
+def test_a_perpendicular_tilt_has_no_slope_ratio() -> None:
+    table = patch_table()
+    table["side_truth"] = 1e-6
+    slopes = wo006_report.slope_table(table, 1.0, 0.0)
+    assert not slopes["estimable"].any()
+    assert np.isfinite(slopes["full_slope"]).all()
+
+
+def test_gain_error_is_measured_per_cell() -> None:
+    table = patch_table(mode="L4.3")
+    table = table.assign(gain_pred=0.5, gain_pred_true=0.9, flagged=False, L=4.3, ell_along=4.0, ell_across=1.3)
+    gains = wo006_report.gain_table(table)
+    assert gains["measured"].iloc[0] == pytest.approx(1.0, abs=0.01)
+    assert gains["error"].iloc[0] == pytest.approx(0.5, abs=0.01)
+    assert gains["error_true_tilt"].iloc[0] == pytest.approx(0.1, abs=0.01)
+
+
+def test_fit_refuses_evaluation_seeds(tmp_path: Path) -> None:
+    cases = pd.DataFrame(
+        {
+            "case_id": [0],
+            "estimator": ["pc"],
+            "texture": ["a1"],
+            "corr_length": [np.nan],
+            "fibre_tilt_deg": [0],
+            "theta_deg": [1],
+            "seed_id": [5],
+        }
+    )
+    cases.to_parquet(tmp_path / "cases.parquet")
+    keys = ("g_u", "g_v", "truth_u", "truth_v", "side_e_v", "side_e_u", "side_g_v", "side_g_u")
+    pd.DataFrame({"case_id": [0], **{key: [0.0] for key in keys}}).to_parquet(tmp_path / "details-orientation.parquet")
+    with pytest.raises(ValueError, match="calibration may use only"):
+        wo006_report.fit(tmp_path)

@@ -80,8 +80,10 @@ class Params:
     max_pairs: int | None = None  # if set, keep only this many pairs of the window, centred on its peak
     # uncertainty and integration
     kappa: float = 1.0  # covariance scale inside the raw estimate, unchanged from WO-002
-    sigma_inflation: float = 1.0  # WO-006 kappa: calibrated variance = kappa^2 sigma^2 + (f |g|)^2
-    sigma_floor: float = 0.0  # WO-006 f, the relative floor in the same formula
+    # WO-006 calibration: variance = kappa^2 sigma^2 + (f |g|)^2. Fitted on seeds 0-4 and frozen before any evaluation
+    # seed ran (reports/2026-11-wo006/calibration.json). No single pair suits every mode; see the WO-006 report.
+    sigma_inflation: float = 2.95  # kappa
+    sigma_floor: float = 0.0  # f
     directional: bool = False  # keep across-fibre information only (WO-006; off until the WO-003 pilot decides)
     directional_rcond: float = 0.1  # a summed direction below this fraction of the strongest counts as unobserved
     zstar_sigma: float = 1.0  # voxels; screening weight of z* in the integration
@@ -1111,6 +1113,7 @@ def calibrate(
             if (round(loss, 9), width) < (round(best[0], 9), best[1]):
                 best = (loss, width, float(kappa), float(floor))
     loss, _, kappa, floor = best
+    kappa, floor = round(kappa, 4), round(floor, 4)  # grids built by adding steps carry rounding noise
     return Calibration(kappa, floor, loss, stratum_coverage(error, variance, magnitude, strata, kappa, floor))
 
 

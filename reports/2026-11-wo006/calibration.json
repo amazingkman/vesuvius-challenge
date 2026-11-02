@@ -1,0 +1,58 @@
+{
+ "all_modes_fit": {
+  "floor": 0.57,
+  "kappa": 11.2
+ },
+ "coverage": {
+  "a1": 0.9959821428571428,
+  "two_layer": 0.9318080357142857
+ },
+ "coverage_all_modes": [
+  {
+   "coverage": 0.9959821428571428,
+   "mode": "a1",
+   "patches": 8960,
+   "sd_z": 0.5087658781122577,
+   "wrong_sign": 0.0
+  },
+  {
+   "coverage": 0.9318080357142857,
+   "mode": "two_layer",
+   "patches": 8960,
+   "sd_z": 0.8895468245351731,
+   "wrong_sign": 0.0
+  },
+  {
+   "coverage": 0.34274553571428573,
+   "mode": "L2.0",
+   "patches": 8960,
+   "sd_z": 5.079614685104117,
+   "wrong_sign": 0.42924107142857143
+  },
+  {
+   "coverage": 0.41450892857142857,
+   "mode": "L4.3",
+   "patches": 8960,
+   "sd_z": 3.544330913279783,
+   "wrong_sign": 0.17935267857142856
+  },
+  {
+   "coverage": 0.44453125,
+   "mode": "L8.0",
+   "patches": 8960,
+   "sd_z": 3.386497124459441,
+   "wrong_sign": 0.06138392857142857
+  }
+ ],
+ "feasible_points": 0,
+ "floor": 0.0,
+ "kappa": 2.95,
+ "patches": 44800,
+ "seed_ids": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ]
+}
