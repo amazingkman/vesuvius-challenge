@@ -1,0 +1,52 @@
+{
+  "finished_at": "2026-11-02T03:36:36+00:00",
+  "image_digest": null,
+  "outputs": [
+    "<repo>/reports/2026-11-wo006/generated/summary.md",
+    "<repo>/reports/2026-11-wo006/generated/tables.json",
+    "<repo>/reports/2026-11-wo006/generated/fig1-coverage.png",
+    "<repo>/reports/2026-11-wo006/generated/fig2-gain.png",
+    "<repo>/reports/2026-11-wo006/generated/fig3-slope-ratio.png",
+    "<repo>/reports/2026-11-wo006/generated/fig4-processed-noise.png"
+  ],
+  "params": {
+    "calibration": "<repo>/reports/2026-11-wo006/calibration.json",
+    "evaluation": "<repo>/runs/synth/wo006-evaluation-20261102T025614",
+    "processed": "<repo>/runs/synth/wo006-processed-20261102T030915"
+  },
+  "partial": false,
+  "repo_commit": "02cb017ef7179de84fee14d79ad371310b6112b4",
+  "reproduce": "uv run vch synth wo006-report reports/2026-11-wo006/calibration.json runs/synth/wo006-evaluation-20261102T025614 runs/synth/wo006-processed-20261102T030915 --out reports/2026-11-wo006/generated",
+  "results": {
+    "verdicts": {
+      "Calibration, A1 and two-layer": {
+        "detail": "a1: coverage 0.997, wrong sign 0.0000; two_layer: coverage 0.936, wrong sign 0.0000",
+        "verdict": "FAIL"
+      },
+      "Directional estimate, realistic L = 4.3": {
+        "detail": "slope 0.82 to 1.10, worst wrong sign 0.206; not estimable at [0] degrees",
+        "verdict": "FAIL"
+      },
+      "Gain prediction": {
+        "detail": "61% of 100 cells within 0.25; worst 1.94. Along the true tilt: 73%, worst 1.29",
+        "verdict": "FAIL"
+      }
+    }
+  },
+  "seed": null,
+  "source_sha256": "78ca1a41ce795375f1fb6488608e328ea3741252d3e39f4608967e3b38dce295",
+  "stage": "wo006-report",
+  "started_at": "2026-11-02T03:36:35+00:00",
+  "versions": {
+    "numpy": "2.5.4",
+    "pyarrow": "26.0.0",
+    "python": "3.14.10",
+    "rich": "15.0.0",
+    "scipy": "1.18.1",
+    "tifffile": "2026.10.15",
+    "typer": "0.27.3",
+    "vesuvius": "0.2.4",
+    "zarr": "3.4.2"
+  },
+  "villa_sha": "d57c28ebee8776b618f9851c2289cc407ea99dd4"
+}
