@@ -13,6 +13,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import typer
+from rich.text import Text
 from rich.traceback import install
 
 from vesuvius_challenge import fetch as fetching
@@ -562,7 +563,8 @@ def selftest() -> None:
                 outcomes.append((name, "[green]pass[/green]", f"{time.monotonic() - started:.2f} s"))
             progress.advance(task)
             board.stats(passed=len(outcomes) - failed, failed=failed)
-    record.results = {"passed": len(outcomes) - failed, "failed": failed, "checks": [list(row) for row in outcomes]}
+    checks = [[Text.from_markup(cell).plain for cell in row] for row in outcomes]
+    record.results = {"passed": len(outcomes) - failed, "failed": failed, "checks": checks}
     record_path = record.finish(output, partial=stop.requested)
     ui.summary("Selftest", outcomes, [record_path], record.reproduce, stop.requested)
     if failed:

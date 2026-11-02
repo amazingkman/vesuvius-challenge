@@ -26,6 +26,15 @@ def test_selftest_checks_pass(name: str, check) -> None:
     check()
 
 
+def test_selftest_command_saves_a_plain_record(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(cli.app, ["selftest"])
+    assert result.exit_code == 0, result.output
+    saved = json.loads((tmp_path / "runs" / "selftest.run.json").read_text())
+    assert saved["results"]["failed"] == 0
+    assert saved["results"]["checks"][0][1] == "pass"
+
+
 def test_record_stays_partial_until_finished(tmp_path: Path) -> None:
     record = RunRecord("t", {"a": 1})
     assert record.partial
