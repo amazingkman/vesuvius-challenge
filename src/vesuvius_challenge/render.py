@@ -17,6 +17,7 @@ import tifffile
 
 IMAGE = "ghcr.io/scrollprize/villa/volume-cartographer"
 IMAGE_TAG = "edge"
+PWD = "$PWD"
 BAND_PROGRESS = re.compile(r"(?:band|tile-row) (\d+)/(\d+)")
 
 
@@ -81,9 +82,23 @@ def container_path(path: Path, data_root: Path) -> str:
     return f"/data/{relative.as_posix()}"
 
 
+def mount_argument(data_root: Path) -> str:
+    """The `-v` value for `data_root`, written so that the record is anonymous and portable."""
+    try:
+        relative = data_root.resolve().relative_to(Path.cwd().resolve())
+    except ValueError as error:
+        raise ValueError(f"{data_root} must be under the working directory; run from the repo root") from error
+    return f"{PWD}/{relative.as_posix()}:/data"
+
+
+def expand_pwd(command: list[str]) -> list[str]:
+    """Fill in `$PWD` for execution. The expanded form is never written to a record."""
+    return [part.replace(PWD, str(Path.cwd()), 1) if part.startswith(f"{PWD}/") else part for part in command]
+
+
 def build_command(
     *,
-    digest: str,
+    digest: str | None,
     data_root: Path,
     segment_dir: Path,
     output_dir: Path,
@@ -96,11 +111,11 @@ def build_command(
     crop: Crop | None,
     container_name: str,
 ) -> list[str]:
-    """The full `podman run` command. The image is addressed by digest, so it is exact."""
+    """The `podman run` command as recorded, run from the repo root. A digest makes it exact."""
     command = [
         "podman", "run", "--rm", "--name", container_name, "--userns=keep-id",
-        "-v", f"{data_root.resolve()}:/data",
-        f"{IMAGE}@{digest}",
+        "-v", mount_argument(data_root),
+        f"{IMAGE}@{digest}" if digest else f"{IMAGE}:{IMAGE_TAG}",
         "vc_render_tifxyz",
         "--volume", "/data/raw/remote-volume",
         "--remote-url", volume_url,
@@ -182,4 +197,5 @@ def layer_statistics(path: Path) -> dict[str, Any]:
 
 
 def shell_command(command: list[str]) -> str:
-    return shlex.join(command)
+    """A command line for a shell. `$PWD` stays in double quotes, so the shell expands it."""
+    return " ".join(f'"{part}"' if part.startswith(f"{PWD}/") else shlex.quote(part) for part in command)

@@ -57,6 +57,7 @@ vesuvius-challenge/
 │   └── BACKLOG.md
 ├── src/vesuvius_challenge/  # installable package (CLI: `vch`)
 ├── tests/                   # pytest + hypothesis; synthetic fixtures only (no scroll data)
+├── FIGURES.md               # register of every tracked image (provenance, command)
 ├── manifests/               # IDs, URLs, checksums of fetched segments (no scroll data)
 ├── scripts/  notebooks/  reports/YYYY-MM-name/
 └── data/                    # gitignored: raw/ segments/ renders/ derived/
@@ -68,12 +69,13 @@ Python 3.14 is required because villa `main`'s `vesuvius` package declares `requ
 
 ```bash
 uv sync                      # resolves the pinned villa commit from uv.lock
-uv run vch --help            # stages: survey, fetch, render, verify-io, selftest, synth
+uv run vch --help            # stages: survey, fetch, render, verify-io, selftest, synth, scan
+uv run pre-commit install    # security hooks, see Security below
 uv run vch selftest          # fast paths against slow references; synthetic data only
 podman pull ghcr.io/scrollprize/villa/volume-cartographer:edge   # renderer, needed from WO-001 on
 ```
 
-Dependencies (see `pyproject.toml`): vesuvius[volume-only] (git, pinned), numpy, scipy, scikit-image, tifffile, zarr, matplotlib, xarray, rich, typer, humanize, psutil, pydantic, tomli-w, pyarrow, duckdb, opencv-python-headless, numba, imagecodecs; dev: pytest, hypothesis, ruff, pyinstrument.
+Dependencies (see `pyproject.toml`): vesuvius[volume-only] (git, pinned), numpy, scipy, scikit-image, tifffile, zarr, matplotlib, xarray, rich, typer, humanize, psutil, pydantic, tomli-w, pyarrow, duckdb, opencv-python-headless, numba, imagecodecs; dev: pytest, hypothesis, ruff, pyinstrument, pre-commit, pip-audit.
 
 ## Data access
 
@@ -101,6 +103,7 @@ uv run vch verify-io data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_
 ```
 
 - **Output:** `data/renders/<sample>/<segment>/<settings>/layers/NN.tif`, plus `render.run.json` holding the full command, image digest, flags, on-surface layer and a pixel hash for each layer. `vch render` stops if the layers already exist, because `vc_render_tifxyz` then exits successfully without rendering; `--overwrite` renders again.
+- **Reproducing a render:** run `results.command_shell` from `render.run.json` **from the repo root**, after moving the old `layers/` aside. It mounts `"$PWD/data:/data"`, which keeps the record anonymous. `--dry-run` writes `render.dry-run.run.json` and works without Podman.
 - **On-surface layer:** layer `k` sits at `(k - (N-1)/2) * step` voxels, so `k0 = (N-1)/2` for odd `N` (21 layers: `k0 = 10`). **An even `N` has no on-surface layer.** Layer numbers are in our own renders; published surface volumes use other conventions.
 - **Direction:** with this image, rising layer number moves along the *negative* `vesuvius` normal (measured, see `reports/2026-11-wo001/upstream-audit.md`).
 - **Crop:** `x,y,width,height` in output pixels. At `--scale 1 --group-idx 0`, one pixel is one level-0 voxel and the surface measures `grid size / meta.json scale`.
@@ -109,7 +112,20 @@ uv run vch verify-io data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_
 
 ## Security
 
-This repository is public and contains no credentials or machine-identifying information by policy. Rules, threat model and audit log: [`docs/security.md`](docs/security.md). Report vulnerabilities privately through GitHub's private vulnerability reporting (`SECURITY.md`, added by WO-005).
+This repository is public, so nothing in it may help anyone reach or identify the owner's machine or accounts. The rules are in `docs/security.md` (DR-010). To report a problem privately, see `SECURITY.md`.
+
+Install the hooks once after cloning, and they run on every commit:
+
+```bash
+uv run pre-commit install
+uv run vch scan              # the same identity and figure checks, on demand
+```
+
+- **Hooks:** gitleaks, private-key and large-file checks (500 kB), a merge-conflict check, the identity and path scan, and the image register. They are pinned by commit SHA in `.pre-commit-config.yaml`.
+- **CI:** gitleaks over full history, the same scans, a `pip-audit` of the exported lockfile, ruff and pytest. Actions are pinned by commit SHA, permissions are read-only, and no secrets are used.
+- **Run records:** `sanitize()` is applied to every record before it is written. Paths are stored as `<repo>/...`, and writing a record raises an error if an absolute path remains. Settings are checked at the start of a run, so a bad output path fails before the work begins.
+- **Images:** every tracked image must be listed in `FIGURES.md` with its provenance class and generating command. Render-derived images are never allowed.
+- **Scan allow-list:** the scan skips only `docs/security.md`, the WO-005 work order and `tests/test_security.py`, by exact path, because those files define the rules.
 
 ## Data and attribution
 

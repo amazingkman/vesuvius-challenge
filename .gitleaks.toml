@@ -1,0 +1,33 @@
+# gitleaks configuration: the default rules plus a machine-identity rule (docs/security.md).
+title = "vesuvius-challenge"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "absolute-home-path"
+description = "Absolute home path, which exposes a username (R2)"
+# The capture group is required. gitleaks' default allow-list drops any match shaped like a
+# whole path, so without `secretGroup` this rule stays silent on exactly what it is for.
+regex = '''(?:/home|/Users|[A-Za-z]:\\Users)[/\\]([A-Za-z0-9._-]+)[/\\]'''
+secretGroup = 1
+
+# Known history items, listed by commit SHA with no wildcards. They were scrubbed from the tree
+# and are kept in history by decision: see the 2026-11-01 audit log in docs/security.md and
+# DR-010. This allow-list applies to this rule only, so the default secret rules still cover
+# these commits.
+[[rules.allowlists]]
+description = "Known history items from the 2026-11-01 audit, and the rule's test fixtures"
+commits = [
+    "7f6635f46e364b9277232d298853809bbee67b89",  # WO-001 run records: username in a home path
+    "a70cd87e8090b67752a5c2859400ae290c0fd595",  # Workstation hostname in docs. No rule here matches it; listed for the record
+]
+paths = ['''^tests/test_security\.py$''']
+
+# The WO-005 acceptance check planted fake files in this one commit and reverted them next. The
+# key header and home path are fake. The default private-key rule needs covering too, so this
+# entry names both rules rather than using a rule-level allow-list.
+[[allowlists]]
+description = "WO-005 acceptance check: planted fake files, reverted in the next commit"
+targetRules = ["private-key", "absolute-home-path"]
+commits = ["0415699f29dd3332c85f68eaeaa5d7d7c7a2f874"]

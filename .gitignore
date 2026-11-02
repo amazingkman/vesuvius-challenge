@@ -21,3 +21,15 @@ runs/
 .cache/
 .ruff_cache/
 .pytest_cache/
+
+# --- Credentials are never committed (docs/security.md R1) ---
+.env*
+*.pem
+*.key
+id_*
+*.p12
+.netrc
+.aws/
+.ssh/
+secrets*
+*.token

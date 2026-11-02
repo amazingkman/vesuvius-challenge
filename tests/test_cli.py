@@ -16,7 +16,7 @@ REPO = Path(__file__).parent.parent
 PIN = "d57c28ebee8776b618f9851c2289cc407ea99dd4"
 
 
-@pytest.mark.parametrize("command", ["survey", "fetch", "render", "verify-io", "selftest", "synth"])
+@pytest.mark.parametrize("command", ["survey", "fetch", "render", "verify-io", "selftest", "synth", "scan"])
 def test_every_stage_has_help(command: str) -> None:
     assert CliRunner().invoke(cli.app, [command, "--help"]).exit_code == 0
 
@@ -24,6 +24,15 @@ def test_every_stage_has_help(command: str) -> None:
 @pytest.mark.parametrize(("name", "check"), selftest.CHECKS)
 def test_selftest_checks_pass(name: str, check) -> None:
     check()
+
+
+def test_selftest_command_saves_a_plain_record(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(cli.app, ["selftest"])
+    assert result.exit_code == 0, result.output
+    saved = json.loads((tmp_path / "runs" / "selftest.run.json").read_text())
+    assert saved["results"]["failed"] == 0
+    assert saved["results"]["checks"][0][1] == "pass"
 
 
 def test_record_stays_partial_until_finished(tmp_path: Path) -> None:

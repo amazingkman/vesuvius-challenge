@@ -54,7 +54,8 @@ def test_container_path_refuses_paths_outside_the_mount(tmp_path: Path) -> None:
         render.container_path(tmp_path, root)
 
 
-def build(tmp_path: Path, crop: Crop | None) -> list[str]:
+def build(tmp_path: Path, crop: Crop | None, monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    monkeypatch.chdir(tmp_path)
     root = tmp_path / "data"
     return render.build_command(
         digest="sha256:abc",
@@ -72,8 +73,8 @@ def build(tmp_path: Path, crop: Crop | None) -> list[str]:
     )
 
 
-def test_command_pins_the_image_and_states_every_layer_flag(tmp_path: Path) -> None:
-    command = build(tmp_path, Crop(1, 2, 30, 40))
+def test_command_pins_the_image_and_states_every_layer_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    command = build(tmp_path, Crop(1, 2, 30, 40), monkeypatch)
     assert f"{render.IMAGE}@sha256:abc" in command
     assert "--userns=keep-id" in command
     for flag, value in [("--num-slices", "21"), ("--slice-step", "1"), ("--crop-x", "1"), ("--crop-height", "40")]:
@@ -81,8 +82,23 @@ def test_command_pins_the_image_and_states_every_layer_flag(tmp_path: Path) -> N
     assert command[command.index("--tif-output") + 1] == "/data/renders/S/1/t/layers"
 
 
-def test_full_surface_command_has_no_crop_flags(tmp_path: Path) -> None:
-    assert not any(part.startswith("--crop") for part in build(tmp_path, None))
+def test_full_surface_command_has_no_crop_flags(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    assert not any(part.startswith("--crop") for part in build(tmp_path, None, monkeypatch))
+
+
+def test_recorded_mount_is_anonymous_and_expands_only_to_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    command = build(tmp_path, None, monkeypatch)
+    assert command[command.index("-v") + 1] == "$PWD/data:/data"
+    assert str(tmp_path) not in " ".join(command)
+    assert render.expand_pwd(command)[command.index("-v") + 1] == f"{tmp_path.resolve()}/data:/data"
+    assert '-v "$PWD/data:/data" ' in render.shell_command(command)
+
+
+def test_data_root_outside_the_working_directory_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "work").mkdir()
+    monkeypatch.chdir(tmp_path / "work")
+    with pytest.raises(ValueError, match="repo root"):
+        render.mount_argument(tmp_path / "data")
 
 
 @pytest.mark.parametrize("line", ["  band 3/8 (37%)  0.1 bands/s", "tile-row 3/8 (37%)  1.0 chunks/s"])

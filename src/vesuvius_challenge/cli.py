@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import time
 from pathlib import Path
 from typing import Annotated, Any
@@ -12,15 +13,17 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import typer
+from rich.text import Text
 from rich.traceback import install
 
 from vesuvius_challenge import fetch as fetching
 from vesuvius_challenge import render as rendering
+from vesuvius_challenge import security, ui, verify
 from vesuvius_challenge import selftest as selftests
 from vesuvius_challenge import survey as surveying
-from vesuvius_challenge import ui, verify
 from vesuvius_challenge.runrecord import RunRecord, load_record
 from vesuvius_challenge.s3 import Bucket, IncompleteDownload
+from vesuvius_challenge.security import from_repo_path, repo_path, scan_figures, scan_identity
 from vesuvius_challenge.synth_cli import synth_app
 
 install(show_locals=False)
@@ -124,7 +127,7 @@ def survey(
     pq.write_table(pa.Table.from_pylist(rows, schema=surveying.SCHEMA), table_path)
     stats = surveying.summarise(rows)
     record.results = stats
-    record.outputs = [str(table_path)]
+    record.outputs = [repo_path(table_path)]
     record_path = record.finish(out / f"{sample}.run.json", partial=stop.requested)
 
     tags = ", ".join(f"{k} {v}" for k, v in stats["tag_distribution"].items()) or "none"
@@ -207,7 +210,7 @@ def fetch(
         results["files_downloaded"] = len(fetched)
         results["volume_path"] = volume_prefix
     record.results = results
-    record.outputs = [str(path) for path in outputs]
+    record.outputs = [repo_path(path) for path in outputs]
     record_path = record.finish(dest / "fetch.run.json", partial=partial)
     ui.summary(
         f"Fetch of {identifier}",
@@ -246,24 +249,47 @@ def render(
     tag = f"n{num_slices}_s{slice_step:g}_" + (window.tag() if window else "full")
     output_dir = root / "renders" / manifest["sample"] / manifest["segment"] / tag
     k0 = rendering.on_surface_layer(num_slices)
-    digest = rendering.image_digest()
+    try:
+        digest = rendering.image_digest()
+    except (OSError, subprocess.CalledProcessError) as error:
+        if not dry_run:
+            raise typer.BadParameter(f"cannot read the image digest from Podman: {error}") from error
+        digest = None
     container = f"vch-render-{os.getpid()}"
-    command = rendering.build_command(
-        digest=digest,
-        data_root=root,
-        segment_dir=segment_dir,
-        output_dir=output_dir,
-        volume_url=url,
-        num_slices=num_slices,
-        slice_step=slice_step,
-        scale=scale,
-        group_idx=group_idx,
-        cache_gb=cache_gb,
-        crop=window,
-        container_name=container,
-    )
+    try:
+        command = rendering.build_command(
+            digest=digest,
+            data_root=root,
+            segment_dir=segment_dir,
+            output_dir=output_dir,
+            volume_url=url,
+            num_slices=num_slices,
+            slice_step=slice_step,
+            scale=scale,
+            group_idx=group_idx,
+            cache_gb=cache_gb,
+            crop=window,
+            container_name=container,
+        )
+    except ValueError as error:
+        raise typer.BadParameter(str(error)) from error
+    params = {
+        "segment_dir": repo_path(segment_dir),
+        "num_slices": num_slices,
+        "slice_step": slice_step,
+        "crop": window.__dict__ if window else None,
+        "volume_url": url,
+        "scale": scale,
+        "group_idx": group_idx,
+        "cache_gb": cache_gb,
+    }
+    record = RunRecord("render", params, image_digest=digest)
     if dry_run:
-        ui.console.print(rendering.shell_command(command), soft_wrap=True, highlight=False, markup=False)
+        shell = rendering.shell_command(command)
+        record.results = {"dry_run": True, "command": command, "command_shell": shell, "on_surface_layer": k0}
+        record_path = record.finish(output_dir / "render.dry-run.run.json", partial=True)
+        ui.console.print(shell, soft_wrap=True, highlight=False, markup=False)
+        ui.console.print(f"[green]saved[/green] {record_path}", soft_wrap=True)
         return
 
     try:
@@ -284,17 +310,6 @@ def render(
         },
         output_dir,
     )
-    params = {
-        "segment_dir": str(segment_dir),
-        "num_slices": num_slices,
-        "slice_step": slice_step,
-        "crop": window.__dict__ if window else None,
-        "volume_url": url,
-        "scale": scale,
-        "group_idx": group_idx,
-        "cache_gb": cache_gb,
-    }
-    record = RunRecord("render", params, image_digest=digest)
     progress = ui.item_progress()
     bands = progress.add_task("Rendering bands", total=None, rate="- band/s")
     stats_task = progress.add_task("Layer statistics", total=num_slices, rate="- layer/s", visible=False)
@@ -316,7 +331,7 @@ def render(
                 progress.update(bands, completed=done, total=total, rate=ui.per_second(done, elapsed, "band"))
                 board.stats(bands=f"{done} of {total}")
 
-        code, log = rendering.run_streaming(command, on_line, lambda: stop.requested, container)
+        code, log = rendering.run_streaming(rendering.expand_pwd(command), on_line, lambda: stop.requested, container)
         render_seconds = time.monotonic() - started
         files = rendering.layer_files(output_dir)
         layers: list[dict[str, Any]] = []
@@ -347,7 +362,7 @@ def render(
         "layers": layers,
         "renderer_log": log.splitlines()[-40:],
     }
-    record.outputs = [str(path) for path in files]
+    record.outputs = [repo_path(path) for path in files]
     record_path = record.finish(output_dir / "render.run.json", partial=partial)
     if code != 0:
         ui.console.print(f"[red]Renderer exited with code {code}[/red]\n{log[-2000:]}", markup=True)
@@ -382,7 +397,7 @@ def verify_io(
 
     saved = load_record(render_dir / "render.run.json")
     params, results = saved["params"], saved["results"]
-    segment_dir = Path(params["segment_dir"])
+    segment_dir = from_repo_path(params["segment_dir"])
     if not params["crop"]:
         raise typer.BadParameter("verify-io needs a cropped render")
     crop = rendering.Crop(**params["crop"])
@@ -398,7 +413,7 @@ def verify_io(
         {"render": render_dir.name, "stride": stride, "sign probe": f"+/-{probe} layers", "figure": figure},
         output,
     )
-    record = RunRecord("verify-io", {"render_dir": str(render_dir), "stride": stride, "probe": probe})
+    record = RunRecord("verify-io", {"render_dir": repo_path(render_dir), "stride": stride, "probe": probe})
     record.image_digest = saved.get("image_digest")
     progress = ui.item_progress()
     task = progress.add_task("I/O proof", total=4, rate="")
@@ -447,7 +462,7 @@ def verify_io(
         "layer_above_k0_is": "plus_normal" if plus > minus else "minus_normal",
     }
     if figure_path:
-        record.outputs = [str(figure_path)]
+        record.outputs = [repo_path(figure_path)]
     record_path = record.finish(output, partial=stop.requested)
     ui.summary(
         "I/O proof",
@@ -473,6 +488,48 @@ def verify_io(
         record.reproduce,
         stop.requested,
     )
+
+
+@app.command()
+def scan() -> None:
+    """Check tracked files for machine identity, key headers and unregistered images."""
+    output = Path("runs") / "scan.run.json"
+    checks = [
+        ("Identity and paths", scan_identity, "Looks for home paths, this machine's names and key headers."),
+        ("Figure register", scan_figures, "Every tracked image must be listed in FIGURES.md, and none render-derived."),
+    ]
+    ui.banner(
+        "vch scan",
+        "Runs the same checks as the pre-commit hooks and CI over every tracked file. "
+        "It reports where a problem is, not the matched text, so its output cannot repeat a leak.",
+        {"checks": len(checks), "root": "<repo>"},
+        output,
+    )
+    record = RunRecord("scan", {"checks": [name for name, _, _ in checks]})
+    progress = ui.item_progress()
+    task = progress.add_task("Checks", total=len(checks), rate="")
+    findings: list[Any] = []
+    with ui.GracefulStop() as stop, ui.Dashboard(progress) as board:
+        for _, check, why in checks:
+            if stop.requested:
+                break
+            board.explain(why)
+            findings += check(security.REPO_ROOT)
+            progress.advance(task)
+            board.stats(findings=len(findings))
+    record.results = {"findings": [str(finding) for finding in findings]}
+    record_path = record.finish(output, partial=stop.requested)
+    for finding in findings:
+        ui.console.print(f"[red]{finding}[/red]", soft_wrap=True, markup=True, highlight=False)
+    ui.summary(
+        "Security scan",
+        [("Findings", str(len(findings)), "Zero means a commit would pass these checks.")],
+        [record_path],
+        record.reproduce,
+        stop.requested,
+    )
+    if findings:
+        raise typer.Exit(1)
 
 
 @app.command("selftest")
@@ -506,7 +563,8 @@ def selftest() -> None:
                 outcomes.append((name, "[green]pass[/green]", f"{time.monotonic() - started:.2f} s"))
             progress.advance(task)
             board.stats(passed=len(outcomes) - failed, failed=failed)
-    record.results = {"passed": len(outcomes) - failed, "failed": failed, "checks": [list(row) for row in outcomes]}
+    checks = [[Text.from_markup(cell).plain for cell in row] for row in outcomes]
+    record.results = {"passed": len(outcomes) - failed, "failed": failed, "checks": checks}
     record_path = record.finish(output, partial=stop.requested)
     ui.summary("Selftest", outcomes, [record_path], record.reproduce, stop.requested)
     if failed:

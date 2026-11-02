@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from vesuvius_challenge.security import FIGURE_METADATA  # noqa: E402
+
 # Reference categorical palette (dataviz skill, light mode), fixed order; text stays in text ink.
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#6250d6"]
 MARKERS = ["o", "s", "^", "D", "v", "P"]
@@ -105,7 +107,7 @@ def md_table(df: pd.DataFrame, floatfmt: str = "{:.3g}") -> str:
 
 def _save(fig, path: Path) -> Path:
     fig.tight_layout()
-    fig.savefig(path, dpi=150)
+    fig.savefig(path, dpi=150, metadata=FIGURE_METADATA)
     plt.close(fig)
     return path
 

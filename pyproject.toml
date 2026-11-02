@@ -42,6 +42,8 @@ vesuvius = { git = "https://github.com/ScrollPrize/villa", subdirectory = "vesuv
 [dependency-groups]
 dev = [
     "hypothesis>=6.170.14",
+    "pip-audit>=2.10.1",
+    "pre-commit>=4.7.0",
     "pyinstrument>=5.1.3",
     "pytest>=9.2.0",
     "ruff>=0.17.3",

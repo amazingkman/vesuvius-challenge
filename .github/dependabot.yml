@@ -1,0 +1,8 @@
+# Weekly updates for the pinned GitHub Actions only. There is deliberately no entry for Python:
+# the villa pin and uv.lock change only through work orders (DR-004). Dependabot alerts stay on.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
