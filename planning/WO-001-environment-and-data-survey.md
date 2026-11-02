@@ -91,7 +91,8 @@ uv run vch fetch PHerc0139 20260127000000      # also 20260210000000, 2026011200
 uv run vch render data/segments/PHerc0139/20260127000000 -n 21 -s 1 --crop 18528,14248,1024,1024 --overwrite
 uv run vch verify-io data/renders/PHerc0139/20260127000000/n21_s1_x18528_y14248_w1024_h1024 --figure
 # likewise: 20260210000000 crop 18688,14088; 20260112000000 crop 15288,11368; 20260115000000 crop 15368,11248
-# reproduction: mv layers layers.first, then run results.command_shell from render.run.json
+# reproduction, from the repo root: mv layers layers.first, then run results.command_shell from render.run.json
+# (WO-005 changed recorded commands to the anonymous form -v "$PWD/data:/data"; the shell fills in $PWD)
 uvx --from ripgrep rg -n -i --no-heading --hidden -g '!.git' -- '<pattern>' .    # in ~/src/villa, one per pattern
 gh pr view <n> --repo ScrollPrize/villa
 ```

@@ -157,7 +157,7 @@ All 21 layers at `--num-slices 21 --slice-step 1 --scale 1 --group-idx 0`, crop 
 
 The render and the `vesuvius` read agree across all four segments, and each best offset is zero, so the pinned `vesuvius` and the May renderer agree on geometry and on the volume at the pixel level.
 
-**Reproduction:** re-running the logged `command_shell` unchanged, with the first render moved aside, wrote 21 new layers in 55.5 s, and 21 of 21 match the record's pixel hashes (21 of 21 byte-identical files). See `run-records/20260127000000.reproduce-check.json`. The logged command writes to the same path, so re-running it needs the old `layers/` moved first.
+**Reproduction:** re-running the logged `command_shell` unchanged, with the first render moved aside, wrote 21 new layers in 55.5 s, and 21 of 21 match the record's pixel hashes (21 of 21 byte-identical files). See `run-records/20260127000000.reproduce-check.json`. The logged command writes to the same path, so re-running it needs the old `layers/` moved first, and it must run from the repo root, because it mounts `$PWD/data` (WO-005).
 
 **A failure worth recording.** My first reproduction check passed 21 of 21 in 1.6 s and was **false**. `vc_render_tifxyz` exits 0 without rendering when all its output files exist, so it compared old files with themselves. `vch render` now refuses to run over existing layers, and the result above comes from a re-run with the first render moved aside. Any tool wrapping this binary should do the same.
 

@@ -1,6 +1,6 @@
 # WO-005 — Security hardening: anonymous run records, secret/identity scanning, CI hardening
 
-Executor: **Cloud** (repo config and code; no data needed)  Depends on: WO-002 merged (avoid conflicts in `runrecord.py` / `render.py`)  Status: issued 2026-11-01. **Must merge before WO-003 starts**, because WO-003 writes many run records.
+Executor: **VSCode** (repo config and code; no data needed)  Depends on: WO-002 merged (avoid conflicts in `runrecord.py` / `render.py`)  Status: issued 2026-11-01. **Must merge before WO-003 starts**, because WO-003 writes many run records.
 
 ## 1. Objective
 
